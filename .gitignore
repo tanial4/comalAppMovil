@@ -1,0 +1,44 @@
+# Android
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+*.ap_
+
+# Módulo app
+app/build/
+
+# Google Services
+google-services.json
+
+# Keystore
+*.jks
+*.keystore
+
+# Kotlin
+*.class
+
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Logs
+*.log
+
+# IDEs
+*.swp
+*.swo
+.vscode/
+
+# MacOS
+__MACOSX/
+
+# Generados por el compilador
+/out/

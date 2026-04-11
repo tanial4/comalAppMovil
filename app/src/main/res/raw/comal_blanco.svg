@@ -1,0 +1,20 @@
+<svg width="348" height="110" viewBox="0 0 348 110" xmlns="http://www.w3.org/2000/svg">
+  <title>Logo Comal++ Restaurante Blanco</title>
+  <defs>
+    <clipPath id="comal-clip2">
+      <circle cx="55" cy="55" r="44"/>
+    </clipPath>
+  </defs>
+  <circle cx="55" cy="55" r="46" fill="none" stroke="#ffffff" stroke-width="6"/>
+  <g clip-path="url(#comal-clip2)" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round">
+    <line x1="15" y1="33" x2="95" y2="33"/>
+    <line x1="11" y1="42" x2="99" y2="42"/>
+    <line x1="9"  y1="51" x2="101" y2="51"/>
+    <line x1="9"  y1="60" x2="101" y2="60"/>
+    <line x1="11" y1="69" x2="99" y2="69"/>
+    <line x1="15" y1="78" x2="95" y2="78"/>
+  </g>
+  <rect x="100" y="50" width="16" height="9" rx="2" fill="#ffffff"/>
+  <text x="126" y="48" font-family="Arial, sans-serif" fill="#ffffff" font-size="44" font-weight="700">COMAL<tspan font-size="30" dy="-7">++</tspan></text>
+  <text x="128" y="85" font-family="Arial, sans-serif" fill="#ffffff" font-size="26" font-weight="400" letter-spacing="3">RESTAURANTE</text>
+</svg>
