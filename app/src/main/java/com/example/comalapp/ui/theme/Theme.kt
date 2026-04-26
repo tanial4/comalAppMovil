@@ -28,6 +28,8 @@ private val AppColorScheme = lightColorScheme(
 
     error                = danger,
     onError              = backgroundCard,
+
+
 )
 
 @Composable

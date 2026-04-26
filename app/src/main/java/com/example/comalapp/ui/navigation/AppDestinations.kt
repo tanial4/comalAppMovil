@@ -4,12 +4,14 @@ object AppDestinations {
     const val LOGIN = "login"
     const val REGISTER = "register"
 
+    const val STUDENT_HOME = "student/home"
     const val STUDENT_MENU = "student/menu"
     const val STUDENT_CART = "student/cart"
     const val STUDENT_ORDER_CONFIRM = "student/order/confirm"
     const val STUDENT_ORDER_STATUS = "student/order/status"
     const val STUDENT_ORDER_HISTORY = "student/order/history"
     const val STUDENT_ORDER_DETAIL = "student/order/detail/{orderId}"
+    const val STUDENT_PROFILE = "student/profile"
 
     const val WORKER_ORDERS = "worker/orders"
     const val WORKER_ORDER_DETAIL = "worker/order/detail/{orderId}"

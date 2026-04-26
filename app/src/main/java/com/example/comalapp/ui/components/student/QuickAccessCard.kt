@@ -1,4 +1,4 @@
-package com.example.comalapp.ui.components
+package com.example.comalapp.ui.components.student
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,7 +61,7 @@ fun QuickAccessCard(
                     .clip(MaterialTheme.shapes.medium)
                     .then(
                         Modifier.then(
-                            androidx.compose.foundation.layout.Box(
+                            Box(
                                 modifier = Modifier
                             ).let { Modifier }
                         )

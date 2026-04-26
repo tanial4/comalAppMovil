@@ -1,4 +1,4 @@
-package com.example.comalapp.ui.components
+package com.example.comalapp.ui.components.student
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
