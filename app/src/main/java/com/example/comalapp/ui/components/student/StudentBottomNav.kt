@@ -23,27 +23,40 @@ data class StudentNavItem(
 )
 
 val studentNavItems = listOf(
-    StudentNavItem("Inicio", Icons.Outlined.Home, AppDestinations.STUDENT_MENU),
+    StudentNavItem("Inicio", Icons.Outlined.Home, AppDestinations.STUDENT_HOME),
     StudentNavItem("Menú", Icons.Outlined.RestaurantMenu, AppDestinations.STUDENT_MENU),
     StudentNavItem("Mis órdenes", Icons.Outlined.ListAlt, AppDestinations.STUDENT_ORDER_HISTORY),
     StudentNavItem("Perfil", Icons.Outlined.Person, AppDestinations.STUDENT_PROFILE),
 )
 
+private val secondaryToTabRoute = mapOf(
+    AppDestinations.STUDENT_NOTIFICATIONS to AppDestinations.STUDENT_HOME,
+    AppDestinations.STUDENT_CART to AppDestinations.STUDENT_HOME,
+    AppDestinations.STUDENT_ORDER_DETAIL to AppDestinations.STUDENT_ORDER_HISTORY,
+    AppDestinations.STUDENT_ORDER_STATUS to AppDestinations.STUDENT_ORDER_HISTORY,
+)
+
 @Composable
 fun StudentBottomNav(
-    currentRoute: String,
+    currentRoute: String?,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val activeRoute = secondaryToTabRoute[currentRoute] ?: currentRoute
+
     NavigationBar(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
         studentNavItems.forEach { item ->
-            val selected = currentRoute == item.route
+            val selected = activeRoute == item.route
             NavigationBarItem(
                 selected = selected,
-                onClick = { onNavigate(item.route) },
+                onClick = {
+                    if (currentRoute != item.route) {
+                        onNavigate(item.route)
+                    }
+                },
                 icon = {
                     Icon(
                         imageVector = item.icon,

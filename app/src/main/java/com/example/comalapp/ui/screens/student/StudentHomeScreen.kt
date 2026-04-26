@@ -1,8 +1,6 @@
 package com.example.comalapp.ui.screens.student
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,11 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.ListAlt
@@ -39,7 +37,7 @@ import java.util.Calendar
 
 @Composable
 fun StudentHomeScreen(
-    currentRoute: String,
+    currentRoute: String?,
     notificationCount: Int,
     cartItemCount: Int,
     userName: String,
@@ -56,31 +54,47 @@ fun StudentHomeScreen(
     onAddToCart: (Product) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 0..11  -> "Buenos días"
+        in 12..17 -> "Buenas tardes"
+        else      -> "Buenas noches"
+    }
+
     StudentScaffold(
         currentRoute = currentRoute,
+        label = greeting.uppercase(),
+        title = userName.ifBlank { "Bienvenido" },
         notificationCount = notificationCount,
         cartItemCount = cartItemCount,
         onNotificationsClick = onNotificationsClick,
         onCartClick = onCartClick,
         onNavigate = onNavigate,
         modifier = modifier,
+        extraTopBarContent = {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.AccessTime,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Cafetería abierta · 7:00 am – 5:00 pm",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                )
+            }
+        },
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .padding(innerPadding),
         ) {
-            GreetingHeader(
-                userName = userName,
-                modifier = Modifier.padding(innerPadding),
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            ) {
-                if (hasActiveOrder) {
+            if (hasActiveOrder) {
+                item {
                     Spacer(modifier = Modifier.height(16.dp))
                     ActiveOrderBanner(
                         orderId = activeOrderId,
@@ -88,21 +102,24 @@ fun StudentHomeScreen(
                         productCount = activeOrderProductCount,
                         estimatedMinutes = activeOrderEstimatedMinutes,
                         onViewStatusClick = onViewOrderStatus,
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
+            }
 
+            item {
                 Spacer(modifier = Modifier.height(24.dp))
-
                 Text(
                     text = "Acciones rápidas",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
-
                 Spacer(modifier = Modifier.height(12.dp))
-
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     QuickAccessCard(
@@ -127,132 +144,75 @@ fun StudentHomeScreen(
                         modifier = Modifier.weight(1f),
                     )
                 }
+            }
 
+            item {
                 Spacer(modifier = Modifier.height(24.dp))
-
                 SectionHeader(
                     title = "Categorías",
                     onSeeAllClick = { onNavigate(AppDestinations.STUDENT_MENU) },
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
-
                 Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                item {
-                    CategoryCard(
-                        label = "Cafés",
-                        icon = Icons.Outlined.RestaurantMenu,
-                        iconTint = androidx.compose.ui.graphics.Color(0xFFB45309),
-                        backgroundColor = androidx.compose.ui.graphics.Color(0xFFFEF3C7),
-                        onClick = { },
-                    )
-                }
-                item {
-                    CategoryCard(
-                        label = "Comida",
-                        icon = Icons.Outlined.RestaurantMenu,
-                        iconTint = androidx.compose.ui.graphics.Color(0xFF92400E),
-                        backgroundColor = androidx.compose.ui.graphics.Color(0xFFFEF3C7),
-                        onClick = { },
-                    )
-                }
-                item {
-                    CategoryCard(
-                        label = "Bebidas",
-                        icon = Icons.Outlined.RestaurantMenu,
-                        iconTint = MaterialTheme.colorScheme.primary,
-                        backgroundColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        onClick = { },
-                        selected = true,
-                    )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    item {
+                        CategoryCard(
+                            label = "Cafés",
+                            icon = Icons.Outlined.RestaurantMenu,
+                            iconTint = androidx.compose.ui.graphics.Color(0xFFB45309),
+                            backgroundColor = androidx.compose.ui.graphics.Color(0xFFFEF3C7),
+                            onClick = { },
+                        )
+                    }
+                    item {
+                        CategoryCard(
+                            label = "Comida",
+                            icon = Icons.Outlined.RestaurantMenu,
+                            iconTint = androidx.compose.ui.graphics.Color(0xFF92400E),
+                            backgroundColor = androidx.compose.ui.graphics.Color(0xFFFEF3C7),
+                            onClick = { },
+                        )
+                    }
+                    item {
+                        CategoryCard(
+                            label = "Bebidas",
+                            icon = Icons.Outlined.RestaurantMenu,
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            backgroundColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            onClick = { },
+                        )
+                    }
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            ) {
+            item {
                 Spacer(modifier = Modifier.height(24.dp))
-
                 SectionHeader(
                     title = "Lo más pedido",
                     onSeeAllClick = { onNavigate(AppDestinations.STUDENT_MENU) },
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
-
                 Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(products) { product ->
-                    ProductCard(
-                        name = product.name,
-                        price = product.price,
-                        imageUrl = product.imageUrl,
-                        onAddToCart = { onAddToCart(product) },
-                        modifier = Modifier.width(160.dp),
-                    )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(products) { product ->
+                        ProductCard(
+                            name = product.name,
+                            price = product.price,
+                            imageUrl = product.imageUrl,
+                            onAddToCart = { onAddToCart(product) },
+                            modifier = Modifier.width(160.dp),
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-    }
-}
-
-@Composable
-private fun GreetingHeader(
-    userName: String,
-    modifier: Modifier = Modifier,
-) {
-    val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
-        in 0..11  -> "Buenos días"
-        in 12..17 -> "Buenas tardes"
-        else      -> "Buenas noches"
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(horizontal = 16.dp, vertical = 20.dp),
-    ) {
-        Text(
-            text = greeting.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = userName.ifBlank { "👋" },
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.AccessTime,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                modifier = Modifier.height(14.dp),
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "Cafetería abierta · 7:00 am – 5:00 pm",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-            )
+            item { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 }
