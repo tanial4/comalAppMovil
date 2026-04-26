@@ -130,13 +130,6 @@ fun AppNavGraph(
                     currentRoute = currentRoute,
                     notificationCount = 0,
                     cartItemCount = uiState.totalItemCount,
-                    userName = "",
-                    hasActiveOrder = false,
-                    activeOrderId = "",
-                    activeOrderStatus = "",
-                    activeOrderProductCount = 0,
-                    activeOrderEstimatedMinutes = null,
-                    products = emptyList(),
                     onNotificationsClick = {
                         navController.navigate(AppDestinations.STUDENT_NOTIFICATIONS)
                     },
@@ -149,7 +142,9 @@ fun AppNavGraph(
                     onViewOrderStatus = {
                         navController.navigate(AppDestinations.STUDENT_ORDER_STATUS)
                     },
-                    onAddToCart = { product -> cartViewModel.addProduct(product) },
+                    onAddToCart = { product, qty ->
+                        repeat(qty) { cartViewModel.addProduct(product) }
+                    },
                 )
             }
 
@@ -172,7 +167,9 @@ fun AppNavGraph(
                     onNavigate = { route ->
                         navigateStudentTab(navController, currentRoute, route)
                     },
-                    onAddToCart = { product -> cartViewModel.addProduct(product) },
+                    onAddToCart = { product, qty ->
+                        repeat(qty) { cartViewModel.addProduct(product) }
+                    },
                 )
             }
 

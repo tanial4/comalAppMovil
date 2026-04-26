@@ -1,6 +1,7 @@
 package com.example.comalapp.ui.components.student
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +32,7 @@ fun ProductCard(
     name: String,
     price: Double,
     imageUrl: String?,
-    onAddToCart: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shape = MaterialTheme.shapes.large
@@ -80,7 +81,7 @@ fun ProductCard(
                 }
 
                 FilledIconButton(
-                    onClick = onAddToCart,
+                    onClick = onClick,
                     modifier = Modifier.size(36.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.primary,

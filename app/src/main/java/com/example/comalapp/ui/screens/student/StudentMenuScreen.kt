@@ -14,16 +14,20 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,9 +37,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.comalapp.ComalApplication
 import com.example.comalapp.data.model.Product
 import com.example.comalapp.ui.components.student.ProductCard
+import com.example.comalapp.ui.components.student.ProductDetailSheet
 import com.example.comalapp.ui.components.student.StudentScaffold
 import com.example.comalapp.ui.viewmodel.StudentMenuViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentMenuScreen(
     currentRoute: String?,
@@ -44,7 +50,7 @@ fun StudentMenuScreen(
     onNotificationsClick: () -> Unit,
     onCartClick: () -> Unit,
     onNavigate: (String) -> Unit,
-    onAddToCart: (Product) -> Unit,
+    onAddToCart: (Product, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -58,6 +64,8 @@ fun StudentMenuScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var selectedProduct by remember { mutableStateOf<Product?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -160,11 +168,24 @@ fun StudentMenuScreen(
                             name = product.name,
                             price = product.price,
                             imageUrl = product.imageUrl,
-                            onAddToCart = { onAddToCart(product) },
+                            onClick = { selectedProduct = product },
                         )
                     }
                 }
             }
+        }
+
+        selectedProduct?.let { product ->
+            ProductDetailSheet(
+                product = product,
+                categoryName = uiState.categories
+                    .find { it.id == product.categoryId }?.name
+                    ?.split(" ")
+                    ?.joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } } ?: "",
+                onDismiss = { selectedProduct = null },
+                onAddToCart = { p, qty -> onAddToCart(p, qty) },
+                sheetState = sheetState,
+            )
         }
     }
 }
