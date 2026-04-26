@@ -1,4 +1,4 @@
-package com.example.comalapp.ui.components
+package com.example.comalapp.ui.components.shared
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier

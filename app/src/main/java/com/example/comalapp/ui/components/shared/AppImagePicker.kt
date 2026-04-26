@@ -1,4 +1,4 @@
-package com.example.comalapp.ui.components
+package com.example.comalapp.ui.components.shared
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts

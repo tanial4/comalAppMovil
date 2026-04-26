@@ -22,3 +22,10 @@ val prep            = Color(0xFF3B82F6)
 val ready           = Color(0xFF16A34A)
 val delivered       = Color(0xFF9CA3AF)
 val danger          = Color(0xFFD32F2F)
+
+object OrderStatusColor {
+    val pendient  = com.example.comalapp.ui.theme.pendient
+    val prep      = com.example.comalapp.ui.theme.prep
+    val ready     = com.example.comalapp.ui.theme.ready
+    val delivered = com.example.comalapp.ui.theme.delivered
+}
