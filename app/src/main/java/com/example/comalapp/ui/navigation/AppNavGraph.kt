@@ -1,6 +1,7 @@
 package com.example.comalapp.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -23,10 +24,13 @@ import com.example.comalapp.ui.screens.student.StudentCartScreen
 import com.example.comalapp.ui.screens.student.StudentHomeScreen
 import com.example.comalapp.ui.screens.student.StudentMenuScreen
 import com.example.comalapp.ui.screens.student.StudentNotificationsScreen
+import com.example.comalapp.ui.screens.student.StudentOrderConfirmScreen
 import com.example.comalapp.ui.screens.student.StudentOrderHistoryScreen
+import com.example.comalapp.ui.screens.student.StudentOrderStatusScreen
 import com.example.comalapp.ui.screens.student.StudentProfileScreen
 import com.example.comalapp.ui.viewmodel.StudentCartViewModel
-
+import com.example.comalapp.ui.viewmodel.StudentHomeViewModel
+import com.example.comalapp.ui.screens.student.StudentTicketScreen
 private val studentTabRoutes = setOf(
     AppDestinations.STUDENT_HOME,
     AppDestinations.STUDENT_MENU,
@@ -124,12 +128,13 @@ fun AppNavGraph(
                 val context = LocalContext.current
                 val container = (context.applicationContext as ComalApplication).container
                 val cartViewModel = studentCartViewModel(backStack, navController, container)
-                val uiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val homeViewModel = studentHomeViewModel(backStack, navController, container)
+                val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
 
                 StudentHomeScreen(
                     currentRoute = currentRoute,
                     notificationCount = 0,
-                    cartItemCount = uiState.totalItemCount,
+                    cartItemCount = cartUiState.totalItemCount,
                     onNotificationsClick = {
                         navController.navigate(AppDestinations.STUDENT_NOTIFICATIONS)
                     },
@@ -139,12 +144,13 @@ fun AppNavGraph(
                     onNavigate = { route ->
                         navigateStudentTab(navController, currentRoute, route)
                     },
-                    onViewOrderStatus = {
-                        navController.navigate(AppDestinations.STUDENT_ORDER_STATUS)
+                    onViewOrderStatus = { orderId ->
+                        navController.navigate(AppDestinations.studentOrderStatus(orderId))
                     },
                     onAddToCart = { product, qty ->
                         repeat(qty) { cartViewModel.addProduct(product) }
                     },
+                    homeViewModel = homeViewModel,
                 )
             }
 
@@ -191,16 +197,57 @@ fun AppNavGraph(
                         navigateFromSecondary(navController, currentRoute, route)
                     },
                     onOrderConfirmed = {
-                        navController.navigate(AppDestinations.STUDENT_ORDER_STATUS) {
-                            popUpTo(AppDestinations.STUDENT_CART) { inclusive = true }
-                        }
+                        navController.navigate(AppDestinations.STUDENT_ORDER_CONFIRM)
                     },
                     cartViewModel = cartViewModel,
                 )
             }
 
-            composable(AppDestinations.STUDENT_ORDER_STATUS) {
-                // StudentOrderStatusScreen()
+            composable(AppDestinations.STUDENT_ORDER_CONFIRM) { backStack ->
+                val context = LocalContext.current
+                val container = (context.applicationContext as ComalApplication).container
+                val cartViewModel = studentCartViewModel(backStack, navController, container)
+                val homeViewModel = studentHomeViewModel(backStack, navController, container)
+                val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val homeUiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+
+                LaunchedEffect(cartUiState.orderConfirmed) {
+                    if (cartUiState.orderConfirmed) {
+                        val orderId = cartUiState.confirmedOrderId ?: return@LaunchedEffect
+                        cartViewModel.resetConfirmed()
+                        navController.navigate(AppDestinations.studentOrderStatus(orderId)) {
+                            popUpTo(AppDestinations.STUDENT_CART) { inclusive = true }
+                        }
+                    }
+                }
+
+                StudentOrderConfirmScreen(
+                    items = cartUiState.items,
+                    userName = homeUiState.user?.fullName ?: "",
+                    onConfirm = { cartViewModel.confirmOrder() },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(
+                route = AppDestinations.STUDENT_ORDER_STATUS,
+                arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
+
+                StudentOrderStatusScreen(
+                    orderId = orderId,
+                    onBack = { navController.popBackStack() },
+                    onGoHome = {
+                        navController.navigate(AppDestinations.STUDENT_HOME) {
+                            popUpTo(AppDestinations.STUDENT_GRAPH) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onViewTicket = {
+                        navController.navigate(AppDestinations.studentTicket(orderId))
+                    },
+                )
             }
 
             composable(AppDestinations.STUDENT_ORDER_HISTORY) { backStack ->
@@ -221,7 +268,7 @@ fun AppNavGraph(
                         navigateStudentTab(navController, currentRoute, route)
                     },
                     onOrderClick = { orderId ->
-                        navController.navigate(AppDestinations.studentOrderDetail(orderId))
+                        navController.navigate(AppDestinations.studentOrderStatus(orderId))
                     },
                 )
             }
@@ -276,6 +323,27 @@ fun AppNavGraph(
                 val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
                 // StudentOrderDetailScreen(orderId = orderId)
             }
+            composable(
+                route = AppDestinations.STUDENT_TICKET,
+                arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
+                StudentTicketScreen(
+                    orderId = orderId,
+                    onBack = { navController.popBackStack() },
+                    onTrackOrder = {
+                        navController.navigate(AppDestinations.studentOrderStatus(orderId)) {
+                            popUpTo(AppDestinations.studentTicket(orderId)) { inclusive = true }
+                        }
+                    },
+                    onGoMenu = {
+                        navController.navigate(AppDestinations.STUDENT_MENU) {
+                            popUpTo(AppDestinations.STUDENT_HOME) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
         }
 
         composable(AppDestinations.WORKER_ORDERS) {
@@ -324,6 +392,26 @@ private fun studentCartViewModel(
         factory = StudentCartViewModel.Factory(
             orderRepository = container.orderRepository,
             authRepository = container.authRepository,
+        ),
+    )
+}
+
+@Composable
+private fun studentHomeViewModel(
+    backStack: NavBackStackEntry,
+    navController: NavHostController,
+    container: com.example.comalapp.data.AppContainer,
+): StudentHomeViewModel {
+    val parentEntry = remember(backStack) {
+        navController.getBackStackEntry(AppDestinations.STUDENT_GRAPH)
+    }
+    return viewModel(
+        viewModelStoreOwner = parentEntry,
+        factory = StudentHomeViewModel.Factory(
+            authRepository = container.authRepository,
+            userRepository = container.userRepository,
+            productRepository = container.productRepository,
+            orderRepository = container.orderRepository,
         ),
     )
 }

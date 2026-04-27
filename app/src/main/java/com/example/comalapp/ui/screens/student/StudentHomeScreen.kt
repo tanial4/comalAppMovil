@@ -36,11 +36,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.comalapp.ComalApplication
 import com.example.comalapp.data.model.Product
 import com.example.comalapp.ui.components.student.ActiveOrderBanner
 import com.example.comalapp.ui.components.student.CategoryCard
@@ -61,22 +58,12 @@ fun StudentHomeScreen(
     onNotificationsClick: () -> Unit,
     onCartClick: () -> Unit,
     onNavigate: (String) -> Unit,
-    onViewOrderStatus: () -> Unit,
+    onViewOrderStatus: (String) -> Unit,
     onAddToCart: (Product, Int) -> Unit,
+    homeViewModel: StudentHomeViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val container = (context.applicationContext as ComalApplication).container
-    val viewModel: StudentHomeViewModel = viewModel(
-        factory = StudentHomeViewModel.Factory(
-            authRepository = container.authRepository,
-            userRepository = container.userRepository,
-            productRepository = container.productRepository,
-            orderRepository = container.orderRepository,
-        )
-    )
-
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -90,7 +77,7 @@ fun StudentHomeScreen(
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
+            homeViewModel.clearError()
         }
     }
 
@@ -146,7 +133,7 @@ fun StudentHomeScreen(
                             status = order.status,
                             productCount = order.productCount,
                             estimatedMinutes = null,
-                            onViewStatusClick = onViewOrderStatus,
+                            onViewStatusClick = { onViewOrderStatus(order.id) },
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
                     }
@@ -238,7 +225,7 @@ private fun SectionHeader(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -20,6 +20,7 @@ data class StudentCartUiState(
     val items: List<CartItem> = emptyList(),
     val isLoading: Boolean = false,
     val orderConfirmed: Boolean = false,
+    val confirmedOrderId: String? = null,
     val error: String? = null,
 ) {
     val subtotal: Double get() = items.sumOf { it.product.price * it.quantity }
@@ -78,11 +79,12 @@ class StudentCartViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             orderRepository.createOrder(userId, pairs)
-                .onSuccess {
+                .onSuccess { orderId ->
                     _uiState.value = _uiState.value.copy(
                         items = emptyList(),
                         isLoading = false,
                         orderConfirmed = true,
+                        confirmedOrderId = orderId,
                     )
                 }
                 .onFailure { error ->
@@ -99,7 +101,10 @@ class StudentCartViewModel(
     }
 
     fun resetConfirmed() {
-        _uiState.value = _uiState.value.copy(orderConfirmed = false)
+        _uiState.value = _uiState.value.copy(
+            orderConfirmed = false,
+            confirmedOrderId = null,
+        )
     }
 
     class Factory(

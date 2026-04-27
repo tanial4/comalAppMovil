@@ -57,13 +57,6 @@ fun StudentCartScreen(
         }
     }
 
-    LaunchedEffect(uiState.orderConfirmed) {
-        if (uiState.orderConfirmed) {
-            cartViewModel.resetConfirmed()
-            onOrderConfirmed()
-        }
-    }
-
     StudentScaffold(
         currentRoute = currentRoute,
         label = "MI CARRITO",

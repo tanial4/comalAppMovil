@@ -8,11 +8,14 @@ object AppDestinations {
     const val STUDENT_MENU = "student/menu"
     const val STUDENT_CART = "student/cart"
     const val STUDENT_ORDER_CONFIRM = "student/order/confirm"
-    const val STUDENT_ORDER_STATUS = "student/order/status"
     const val STUDENT_ORDER_HISTORY = "student/order/history"
     const val STUDENT_ORDER_DETAIL = "student/order/detail/{orderId}"
     const val STUDENT_PROFILE = "student/profile"
     const val STUDENT_NOTIFICATIONS  = "student/notifications"
+    const val STUDENT_ORDER_STATUS = "student/order/status/{orderId}"
+    const val STUDENT_TICKET = "student/ticket/{orderId}"
+
+
 
     const val WORKER_ORDERS = "worker/orders"
     const val WORKER_ORDER_DETAIL = "worker/order/detail/{orderId}"
@@ -24,6 +27,8 @@ object AppDestinations {
     const val ADMIN_USERS = "admin/users"
 
     fun studentOrderDetail(orderId: String) = "student/order/detail/$orderId"
+    fun studentOrderStatus(orderId: String) = "student/order/status/$orderId"
+    fun studentTicket(orderId: String) = "student/ticket/$orderId"
     fun workerOrderDetail(orderId: String) = "worker/order/detail/$orderId"
     fun adminProductForm(productId: String? = null) =
         if (productId != null) "admin/products/form?productId=$productId"
