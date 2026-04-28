@@ -18,6 +18,14 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.comalapp.ComalApplication
+import com.example.comalapp.ui.screens.admin.AdminDashboardScreen
+import com.example.comalapp.ui.screens.admin.AdminOrderDetailScreen
+import com.example.comalapp.ui.screens.admin.AdminOrdersScreen
+import com.example.comalapp.ui.screens.admin.AdminProductFormScreen
+import com.example.comalapp.ui.screens.admin.AdminProductsScreen
+import com.example.comalapp.ui.screens.admin.AdminUsersScreen
+import com.example.comalapp.ui.screens.admin.AdminWorkerFormScreen
+import com.example.comalapp.ui.screens.admin.AdminWorkersScreen
 import com.example.comalapp.ui.screens.auth.LoginScreen
 import com.example.comalapp.ui.screens.auth.RegisterScreen
 import com.example.comalapp.ui.screens.student.StudentCartScreen
@@ -28,14 +36,23 @@ import com.example.comalapp.ui.screens.student.StudentOrderConfirmScreen
 import com.example.comalapp.ui.screens.student.StudentOrderHistoryScreen
 import com.example.comalapp.ui.screens.student.StudentOrderStatusScreen
 import com.example.comalapp.ui.screens.student.StudentProfileScreen
+import com.example.comalapp.ui.screens.student.StudentTicketScreen
 import com.example.comalapp.ui.viewmodel.StudentCartViewModel
 import com.example.comalapp.ui.viewmodel.StudentHomeViewModel
-import com.example.comalapp.ui.screens.student.StudentTicketScreen
+
 private val studentTabRoutes = setOf(
     AppDestinations.STUDENT_HOME,
     AppDestinations.STUDENT_MENU,
     AppDestinations.STUDENT_ORDER_HISTORY,
     AppDestinations.STUDENT_PROFILE,
+)
+
+private val adminTabRoutes = setOf(
+    AppDestinations.ADMIN_DASHBOARD,
+    AppDestinations.ADMIN_PRODUCTS,
+    AppDestinations.ADMIN_USERS,
+    AppDestinations.ADMIN_ORDERS,
+    AppDestinations.ADMIN_WORKERS,
 )
 
 private fun navigateStudentTab(
@@ -62,9 +79,39 @@ private fun navigateFromSecondary(
     if (targetRoute == currentRoute) return
     if (targetRoute in studentTabRoutes) {
         navController.navigate(targetRoute) {
-            popUpTo(AppDestinations.STUDENT_HOME) {
-                inclusive = false
-            }
+            popUpTo(AppDestinations.STUDENT_HOME) { inclusive = false }
+            launchSingleTop = true
+        }
+    } else {
+        navController.navigate(targetRoute)
+    }
+}
+
+private fun navigateAdminTab(
+    navController: NavHostController,
+    currentRoute: String?,
+    targetRoute: String,
+) {
+    if (targetRoute == currentRoute) return
+    navController.navigate(targetRoute) {
+        popUpTo(AppDestinations.ADMIN_DASHBOARD) {
+            saveState = true
+            inclusive = false
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
+private fun navigateAdminSecondary(
+    navController: NavHostController,
+    currentRoute: String?,
+    targetRoute: String,
+) {
+    if (targetRoute == currentRoute) return
+    if (targetRoute in adminTabRoutes) {
+        navController.navigate(targetRoute) {
+            popUpTo(AppDestinations.ADMIN_DASHBOARD) { inclusive = false }
             launchSingleTop = true
         }
     } else {
@@ -96,7 +143,7 @@ fun AppNavGraph(
                         "worker" -> navController.navigate(AppDestinations.WORKER_ORDERS) {
                             popUpTo(AppDestinations.LOGIN) { inclusive = true }
                         }
-                        "admin" -> navController.navigate(AppDestinations.ADMIN_PRODUCTS) {
+                        "admin" -> navController.navigate(AppDestinations.ADMIN_GRAPH) {
                             popUpTo(AppDestinations.LOGIN) { inclusive = true }
                         }
                     }
@@ -234,7 +281,6 @@ fun AppNavGraph(
                 arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
             ) { backStackEntry ->
                 val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
-
                 StudentOrderStatusScreen(
                     orderId = orderId,
                     onBack = { navController.popBackStack() },
@@ -321,8 +367,8 @@ fun AppNavGraph(
                 arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
             ) { backStackEntry ->
                 val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
-                // StudentOrderDetailScreen(orderId = orderId)
             }
+
             composable(
                 route = AppDestinations.STUDENT_TICKET,
                 arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
@@ -346,12 +392,132 @@ fun AppNavGraph(
             }
         }
 
-        composable(AppDestinations.WORKER_ORDERS) {
-            // WorkerOrdersScreen()
+        navigation(
+            route = AppDestinations.ADMIN_GRAPH,
+            startDestination = AppDestinations.ADMIN_DASHBOARD,
+        ) {
+            composable(AppDestinations.ADMIN_DASHBOARD) {
+                AdminDashboardScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route ->
+                        navigateAdminTab(navController, currentRoute, route)
+                    },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.ADMIN_GRAPH) { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            composable(AppDestinations.ADMIN_PRODUCTS) {
+                AdminProductsScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route ->
+                        navigateAdminTab(navController, currentRoute, route)
+                    },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.ADMIN_GRAPH) { inclusive = true }
+                        }
+                    },
+                    onAddProduct = {
+                        navController.navigate(AppDestinations.adminProductForm())
+                    },
+                    onEditProduct = { productId ->
+                        navController.navigate(AppDestinations.adminProductForm(productId))
+                    },
+                )
+            }
+
+            composable(
+                route = AppDestinations.ADMIN_PRODUCT_FORM,
+                arguments = listOf(
+                    navArgument("productId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                ),
+            ) { backStackEntry ->
+                val productId = backStackEntry.arguments?.getString("productId")
+                AdminProductFormScreen(
+                    productId = productId,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() },
+                )
+            }
+
+            composable(AppDestinations.ADMIN_ORDERS) {
+                AdminOrdersScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navigateAdminTab(navController, currentRoute, route) },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.ADMIN_GRAPH) { inclusive = true }
+                        }
+                    },
+                    onOrderClick = { orderId ->
+                        navController.navigate(AppDestinations.adminOrderDetail(orderId))
+                    },
+                )
+            }
+
+            composable(AppDestinations.ADMIN_USERS) {
+                AdminUsersScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navigateAdminTab(navController, currentRoute, route) },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.ADMIN_GRAPH) { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            composable(AppDestinations.ADMIN_WORKERS) {
+                AdminWorkersScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navigateAdminTab(navController, currentRoute, route) },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.ADMIN_GRAPH) { inclusive = true }
+                        }
+                    },
+                    onAddWorker = {
+                        navController.navigate(AppDestinations.ADMIN_WORKER_FORM)
+                    },
+                )
+            }
+
+            composable(AppDestinations.ADMIN_WORKER_FORM) {
+                AdminWorkerFormScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() },
+                )
+            }
+
+            composable(
+                route = AppDestinations.ADMIN_ORDER_DETAIL,
+                arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
+                AdminOrderDetailScreen(
+                    orderId = orderId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(
+                route = AppDestinations.ADMIN_USER_DETAIL,
+                arguments = listOf(navArgument("userId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+            }
         }
 
-        composable(AppDestinations.ADMIN_PRODUCTS) {
-            // AdminProductsScreen()
+        composable(AppDestinations.WORKER_ORDERS) {
+            // WorkerOrdersScreen()
         }
 
         composable(
@@ -359,21 +525,6 @@ fun AppNavGraph(
             arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
         ) { backStackEntry ->
             val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
-            // WorkerOrderDetailScreen(orderId = orderId)
-        }
-
-        composable(
-            route = AppDestinations.ADMIN_PRODUCT_FORM,
-            arguments = listOf(
-                navArgument("productId") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            ),
-        ) { backStackEntry ->
-            val productId = backStackEntry.arguments?.getString("productId")
-            // AdminProductFormScreen(productId = productId)
         }
     }
 }

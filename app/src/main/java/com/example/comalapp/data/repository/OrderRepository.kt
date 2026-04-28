@@ -95,6 +95,21 @@ class OrderRepository(
         awaitClose { listener.remove() }
     }
 
+    fun observeAllOrders(): Flow<Result<List<Order>>> = callbackFlow {
+        val listener = firestoreSource.ordersCollection
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                val orders = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Order::class.java)?.copy(id = doc.id)
+                } ?: emptyList()
+                trySend(Result.success(orders))
+            }
+        awaitClose { listener.remove() }
+    }
+
     suspend fun getUserOrderHistory(userId: String): Result<List<Order>> = runCatching {
         firestoreSource.ordersCollection
             .whereEqualTo("userId", userId)

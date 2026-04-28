@@ -4,6 +4,9 @@ import android.net.Uri
 import com.example.comalapp.data.model.Product
 import com.example.comalapp.data.source.FirestoreSource
 import com.example.comalapp.data.source.StorageSource
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class ProductRepository(
@@ -58,10 +61,34 @@ class ProductRepository(
             .await()
     }
 
-    suspend fun setProductAvailability(productId: String, available: Boolean): Result<Unit> = runCatching {
-        firestoreSource.productsCollection
-            .document(productId)
-            .update("available", available)
-            .await()
+    fun observeAllProducts(): Flow<Result<List<Product>>> = callbackFlow {
+        val listener = firestoreSource.productsCollection
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                val products = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Product::class.java)?.copy(id = doc.id)
+                } ?: emptyList()
+                trySend(Result.success(products))
+            }
+        awaitClose { listener.remove() }
+    }
+
+    fun observeAvailableProducts(): Flow<Result<List<Product>>> = callbackFlow {
+        val listener = firestoreSource.productsCollection
+            .whereEqualTo("available", true)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                val products = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Product::class.java)?.copy(id = doc.id)
+                } ?: emptyList()
+                trySend(Result.success(products))
+            }
+        awaitClose { listener.remove() }
     }
 }
