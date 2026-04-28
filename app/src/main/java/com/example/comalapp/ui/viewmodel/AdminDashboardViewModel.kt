@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.comalapp.data.model.Order
-import com.example.comalapp.data.model.Product
 import com.example.comalapp.data.model.User
 import com.example.comalapp.data.repository.AuthRepository
 import com.example.comalapp.data.repository.OrderRepository
@@ -16,30 +15,39 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-data class StudentHomeUiState(
+data class AdminDashboardUiState(
     val user: User? = null,
-    val products: List<Product> = emptyList(),
-    val activeOrder: Order? = null,
+    val orders: List<Order> = emptyList(),
+    val availableProductCount: Int = 0,
     val isLoading: Boolean = false,
     val error: String? = null,
-)
+) {
+    val totalRevenue: Double
+        get() = orders.filter { it.status == "delivered" }.sumOf { it.total }
+    val totalOrders: Int
+        get() = orders.size
+    val activeOrders: Int
+        get() = orders.count { it.status in setOf("pending", "preparing", "ready") }
+    val recentOrders: List<Order>
+        get() = orders.sortedByDescending { it.createdAt }.take(5)
+}
 
-class StudentHomeViewModel(
+class AdminDashboardViewModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val productRepository: ProductRepository,
     private val orderRepository: OrderRepository,
+    private val productRepository: ProductRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(StudentHomeUiState())
-    val uiState: StateFlow<StudentHomeUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AdminDashboardUiState())
+    val uiState: StateFlow<AdminDashboardUiState> = _uiState.asStateFlow()
 
     init {
-        loadUser()
+        loadAdminUser()
         observeData()
     }
 
-    private fun loadUser() {
+    private fun loadAdminUser() {
         val uid = authRepository.currentUserId() ?: return
         viewModelScope.launch {
             userRepository.getUserById(uid).onSuccess { user ->
@@ -49,20 +57,19 @@ class StudentHomeViewModel(
     }
 
     private fun observeData() {
-        val uid = authRepository.currentUserId() ?: return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            productRepository.observeAvailableProducts()
-                .combine(orderRepository.observeActiveOrders()) { productsResult, ordersResult ->
+            orderRepository.observeAllOrders()
+                .combine(productRepository.observeAllProducts()) { ordersResult, productsResult ->
                     Pair(
-                        productsResult.getOrNull() ?: emptyList(),
-                        ordersResult.getOrNull()?.firstOrNull { it.userId == uid },
+                        ordersResult.getOrNull() ?: emptyList(),
+                        productsResult.getOrNull()?.count { it.available } ?: 0,
                     )
                 }
-                .collect { (products, activeOrder) ->
+                .collect { (orders, productCount) ->
                     _uiState.value = _uiState.value.copy(
-                        products = products,
-                        activeOrder = activeOrder,
+                        orders = orders,
+                        availableProductCount = productCount,
                         isLoading = false,
                     )
                 }
@@ -76,16 +83,16 @@ class StudentHomeViewModel(
     class Factory(
         private val authRepository: AuthRepository,
         private val userRepository: UserRepository,
-        private val productRepository: ProductRepository,
         private val orderRepository: OrderRepository,
+        private val productRepository: ProductRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return StudentHomeViewModel(
+            return AdminDashboardViewModel(
                 authRepository,
                 userRepository,
-                productRepository,
                 orderRepository,
+                productRepository,
             ) as T
         }
     }
