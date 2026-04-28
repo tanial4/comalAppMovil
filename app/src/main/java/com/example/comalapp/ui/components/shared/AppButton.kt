@@ -1,5 +1,6 @@
-package com.example.comalapp.ui.components
+package com.example.comalapp.ui.components.shared
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
@@ -55,7 +56,7 @@ fun AppButton(
             enabled = enabled,
             shape = shape,
             colors = colors,
-            border = androidx.compose.foundation.BorderStroke(
+            border = BorderStroke(
                 width = 1.5.dp,
                 color = if (enabled) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.outline,

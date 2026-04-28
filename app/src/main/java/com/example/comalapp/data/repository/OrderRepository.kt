@@ -20,7 +20,10 @@ class OrderRepository(
         "ready" to setOf("delivered")
     )
 
-    suspend fun createOrder(userId: String, items: List<Pair<com.example.comalapp.data.model.Product, Int>>): Result<Unit> = runCatching {
+    suspend fun createOrder(
+        userId: String,
+        items: List<Pair<com.example.comalapp.data.model.Product, Int>>,
+    ): Result<String> = runCatching {
         val unavailable = items.filter { !it.first.available }
         if (unavailable.isNotEmpty()) error("Productos no disponibles: ${unavailable.map { it.first.name }}")
 
@@ -59,6 +62,7 @@ class OrderRepository(
         }
 
         batch.commit().await()
+        orderRef.id
     }
 
     fun observeOrder(orderId: String): Flow<Result<Order>> = callbackFlow {
@@ -78,6 +82,21 @@ class OrderRepository(
     fun observeActiveOrders(): Flow<Result<List<Order>>> = callbackFlow {
         val listener = firestoreSource.ordersCollection
             .whereNotIn("status", listOf("delivered", "cancelled"))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                val orders = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Order::class.java)?.copy(id = doc.id)
+                } ?: emptyList()
+                trySend(Result.success(orders))
+            }
+        awaitClose { listener.remove() }
+    }
+
+    fun observeAllOrders(): Flow<Result<List<Order>>> = callbackFlow {
+        val listener = firestoreSource.ordersCollection
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(Result.failure(error))
@@ -112,7 +131,12 @@ class OrderRepository(
             }
     }
 
-    suspend fun updateOrderStatus(orderId: String, currentStatus: String, newStatus: String, requestedByRole: String): Result<Unit> = runCatching {
+    suspend fun updateOrderStatus(
+        orderId: String,
+        currentStatus: String,
+        newStatus: String,
+        requestedByRole: String,
+    ): Result<Unit> = runCatching {
         if (currentStatus == "delivered") error("Una orden entregada es inmutable")
         if (newStatus == "delivered" && requestedByRole != "worker") error("Solo un worker puede marcar como entregado")
 
