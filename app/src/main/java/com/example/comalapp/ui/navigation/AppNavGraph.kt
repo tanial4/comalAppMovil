@@ -19,6 +19,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.comalapp.ComalApplication
 import com.example.comalapp.ui.screens.admin.AdminDashboardScreen
+import com.example.comalapp.ui.screens.admin.AdminOrderDetailScreen
+import com.example.comalapp.ui.screens.admin.AdminOrdersScreen
 import com.example.comalapp.ui.screens.admin.AdminProductFormScreen
 import com.example.comalapp.ui.screens.admin.AdminProductsScreen
 import com.example.comalapp.ui.screens.admin.AdminUsersScreen
@@ -447,7 +449,18 @@ fun AppNavGraph(
             }
 
             composable(AppDestinations.ADMIN_ORDERS) {
-                // AdminOrdersScreen()
+                AdminOrdersScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navigateAdminTab(navController, currentRoute, route) },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.ADMIN_GRAPH) { inclusive = true }
+                        }
+                    },
+                    onOrderClick = { orderId ->
+                        navController.navigate(AppDestinations.adminOrderDetail(orderId))
+                    },
+                )
             }
 
             composable(AppDestinations.ADMIN_USERS) {
@@ -489,6 +502,10 @@ fun AppNavGraph(
                 arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
             ) { backStackEntry ->
                 val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
+                AdminOrderDetailScreen(
+                    orderId = orderId,
+                    onBack = { navController.popBackStack() },
+                )
             }
 
             composable(
