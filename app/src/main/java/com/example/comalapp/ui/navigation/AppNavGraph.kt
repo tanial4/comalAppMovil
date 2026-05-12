@@ -37,6 +37,11 @@ import com.example.comalapp.ui.screens.student.StudentOrderHistoryScreen
 import com.example.comalapp.ui.screens.student.StudentOrderStatusScreen
 import com.example.comalapp.ui.screens.student.StudentProfileScreen
 import com.example.comalapp.ui.screens.student.StudentTicketScreen
+import com.example.comalapp.ui.screens.worker.WorkerHomeScreen
+import com.example.comalapp.ui.screens.worker.WorkerOrderDetailScreen
+import com.example.comalapp.ui.screens.worker.WorkerOrdersScreen
+import com.example.comalapp.ui.screens.worker.WorkerProductsScreen
+import com.example.comalapp.ui.screens.worker.WorkerQrScannerScreen
 import com.example.comalapp.ui.viewmodel.StudentCartViewModel
 import com.example.comalapp.ui.viewmodel.StudentHomeViewModel
 
@@ -53,6 +58,13 @@ private val adminTabRoutes = setOf(
     AppDestinations.ADMIN_USERS,
     AppDestinations.ADMIN_ORDERS,
     AppDestinations.ADMIN_WORKERS,
+)
+
+private val workerTabRoutes = setOf(
+    AppDestinations.WORKER_HOME,
+    AppDestinations.WORKER_ORDERS,
+    AppDestinations.WORKER_PRODUCTS,
+    AppDestinations.WORKER_QR_SCANNER,
 )
 
 private fun navigateStudentTab(
@@ -119,6 +131,22 @@ private fun navigateAdminSecondary(
     }
 }
 
+private fun navigateWorkerTab(
+    navController: NavHostController,
+    currentRoute: String?,
+    targetRoute: String,
+) {
+    if (targetRoute == currentRoute) return
+    navController.navigate(targetRoute) {
+        popUpTo(AppDestinations.WORKER_HOME) {
+            saveState = true
+            inclusive = false
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
 @Composable
 fun AppNavGraph(
     modifier: Modifier = Modifier,
@@ -140,7 +168,7 @@ fun AppNavGraph(
                         "student" -> navController.navigate(AppDestinations.STUDENT_GRAPH) {
                             popUpTo(AppDestinations.LOGIN) { inclusive = true }
                         }
-                        "worker" -> navController.navigate(AppDestinations.WORKER_ORDERS) {
+                        "worker" -> navController.navigate(AppDestinations.WORKER_GRAPH) {
                             popUpTo(AppDestinations.LOGIN) { inclusive = true }
                         }
                         "admin" -> navController.navigate(AppDestinations.ADMIN_GRAPH) {
@@ -393,6 +421,82 @@ fun AppNavGraph(
         }
 
         navigation(
+            route = AppDestinations.WORKER_GRAPH,
+            startDestination = AppDestinations.WORKER_HOME,
+        ) {
+            composable(AppDestinations.WORKER_HOME) {
+                WorkerHomeScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navigateWorkerTab(navController, currentRoute, route) },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.WORKER_GRAPH) { inclusive = true }
+                        }
+                    },
+                    onOrderClick = { orderId ->
+                        navController.navigate(AppDestinations.workerOrderDetail(orderId))
+                    },
+                    onSeeAllOrders = {
+                        navigateWorkerTab(navController, currentRoute, AppDestinations.WORKER_ORDERS)
+                    },
+                    onScanQr = {
+                        navigateWorkerTab(navController, currentRoute, AppDestinations.WORKER_QR_SCANNER)
+                    },
+                )
+            }
+
+            composable(AppDestinations.WORKER_ORDERS) {
+                WorkerOrdersScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navigateWorkerTab(navController, currentRoute, route) },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.WORKER_GRAPH) { inclusive = true }
+                        }
+                    },
+                    onOrderClick = { orderId ->
+                        navController.navigate(AppDestinations.workerOrderDetail(orderId))
+                    },
+                )
+            }
+
+            composable(AppDestinations.WORKER_PRODUCTS) {
+                WorkerProductsScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navigateWorkerTab(navController, currentRoute, route) },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.WORKER_GRAPH) { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            composable(AppDestinations.WORKER_QR_SCANNER) {
+                WorkerQrScannerScreen(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navigateWorkerTab(navController, currentRoute, route) },
+                    onLogout = {
+                        navController.navigate(AppDestinations.LOGIN) {
+                            popUpTo(AppDestinations.WORKER_GRAPH) { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            composable(
+                route = AppDestinations.WORKER_ORDER_DETAIL,
+                arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
+                WorkerOrderDetailScreen(
+                    orderId = orderId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+        }
+
+        navigation(
             route = AppDestinations.ADMIN_GRAPH,
             startDestination = AppDestinations.ADMIN_DASHBOARD,
         ) {
@@ -514,17 +618,6 @@ fun AppNavGraph(
             ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
             }
-        }
-
-        composable(AppDestinations.WORKER_ORDERS) {
-            // WorkerOrdersScreen()
-        }
-
-        composable(
-            route = AppDestinations.WORKER_ORDER_DETAIL,
-            arguments = listOf(navArgument("orderId") { type = NavType.StringType }),
-        ) { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: return@composable
         }
     }
 }

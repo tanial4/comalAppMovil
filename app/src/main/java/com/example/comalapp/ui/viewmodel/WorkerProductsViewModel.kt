@@ -73,10 +73,11 @@ class WorkerProductsViewModel(
         }
     }
 
-    fun toggleAvailability(product: Product) {
+    fun setAvailability(product: Product, available: Boolean) {
         viewModelScope.launch {
             productRepository.updateProduct(
-                product.copy(available = !product.available)
+                product = product.copy(available = available),
+                imageUri = null,
             ).onFailure { error ->
                 _uiState.value = _uiState.value.copy(error = error.message)
             }
