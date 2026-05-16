@@ -43,7 +43,6 @@ import com.example.comalapp.ComalApplication
 import com.example.comalapp.ui.components.admin.OrderDetailInfoCard
 import com.example.comalapp.ui.components.admin.OrderProductsCard
 import com.example.comalapp.ui.components.admin.OrderProgressBar
-import com.example.comalapp.ui.theme.violet
 import com.example.comalapp.ui.viewmodel.WorkerOrderDetailViewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -102,16 +101,24 @@ fun WorkerOrderDetailScreen(
         )
     }
 
+    val order = uiState.order
+
+    val advanceLabel = when (order?.status) {
+        "pending"   -> "Iniciar preparación"
+        "preparing" -> "Marcar como lista"
+        else        -> null
+    }
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Surface(color = violet) {
+            Surface(color = MaterialTheme.colorScheme.primary) {
                 Column {
                     TopAppBar(
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = violet,
+                            containerColor = MaterialTheme.colorScheme.primary,
                             navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
                         ),
                         navigationIcon = {
@@ -145,47 +152,71 @@ fun WorkerOrderDetailScreen(
             }
         },
     ) { innerPadding ->
-        if (uiState.isLoading || uiState.order == null) {
+        if (uiState.isLoading || order == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(color = violet)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
-            val order = uiState.order!!
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OrderProgressBar(currentStatus = order.status)
-
                 OrderDetailInfoCard(order = order)
+
+                OrderProgressBar(currentStatus = order.status)
 
                 OrderProductsCard(items = uiState.summaryItems)
 
-                if (order.status == "ready") {
-                    Button(
-                        onClick = {
-                            val options = ScanOptions().apply {
-                                setPrompt("Escanea el QR del ticket del estudiante")
-                                setBeepEnabled(true)
-                                setOrientationLocked(true)
-                                setBarcodeImageEnabled(false)
-                            }
-                            qrLauncher.launch(options)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = violet),
-                    ) {
-                        Text("Confirmar entrega con QR")
+                if (order.status != "delivered" && order.status != "cancelled") {
+                    if (order.status == "ready") {
+                        Button(
+                            onClick = {
+                                val options = ScanOptions().apply {
+                                    setPrompt("Escanea el QR del ticket del estudiante")
+                                    setBeepEnabled(true)
+                                    setOrientationLocked(true)
+                                    setBarcodeImageEnabled(false)
+                                }
+                                qrLauncher.launch(options)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        ) {
+                            Text("Confirmar entrega con QR")
+                        }
+                    } else if (advanceLabel != null) {
+                        Button(
+                            onClick = { viewModel.advanceStatus() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        ) {
+                            Text(advanceLabel)
+                        }
                     }
+                }
+
+                TextButton(
+                    onClick = onBack,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = "Volver a la lista",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,6 +44,7 @@ fun WorkerTopBar(
     userEmail: String,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
     extraContent: @Composable (() -> Unit)? = null,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -61,6 +64,16 @@ fun WorkerTopBar(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.weight(1f))
 
                 Box {
@@ -94,7 +107,7 @@ fun WorkerTopBar(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(MaterialTheme.shapes.medium)
-                                        .background(violet),
+                                        .background(MaterialTheme.colorScheme.primary),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(

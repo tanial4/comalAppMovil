@@ -16,6 +16,7 @@ fun WorkerScaffold(
     modifier: Modifier = Modifier,
     label: String = "",
     subtitle: String = "",
+    onBack: (() -> Unit)? = null,
     snackbarHost: @Composable () -> Unit = {},
     extraTopBarContent: @Composable (() -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit,
@@ -31,6 +32,7 @@ fun WorkerScaffold(
                 userName = userName,
                 userEmail = userEmail,
                 onLogout = onLogout,
+                onBack = onBack,
                 extraContent = extraTopBarContent,
             )
         },

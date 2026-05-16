@@ -1,5 +1,6 @@
 package com.example.comalapp.ui.components.worker
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -100,7 +101,9 @@ private fun UrgentOrderRow(
     val timeAgo = order.createdAt?.toDate()?.let { getTimeAgo(it) } ?: ""
 
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -75,6 +75,44 @@ class WorkerOrderDetailViewModel(
         }
     }
 
+    fun advanceStatus() {
+        val order = _uiState.value.order ?: return
+        val nextStatus = when (order.status) {
+            "pending"   -> "preparing"
+            "preparing" -> "ready"
+            else        -> return
+        }
+        viewModelScope.launch {
+            orderRepository.updateOrderStatus(
+                orderId = orderId,
+                currentStatus = order.status,
+                newStatus = nextStatus,
+                requestedByRole = "worker",
+            ).onFailure { error ->
+                _uiState.value = _uiState.value.copy(error = error.message)
+            }
+        }
+    }
+
+    fun revertStatus() {
+        val order = _uiState.value.order ?: return
+        val previousStatus = when (order.status) {
+            "preparing" -> "pending"
+            "ready"     -> "preparing"
+            else        -> return
+        }
+        viewModelScope.launch {
+            orderRepository.updateOrderStatus(
+                orderId = orderId,
+                currentStatus = order.status,
+                newStatus = previousStatus,
+                requestedByRole = "worker",
+            ).onFailure { error ->
+                _uiState.value = _uiState.value.copy(error = error.message)
+            }
+        }
+    }
+
     fun validateQrAndDeliver(scannedQr: String) {
         val order = _uiState.value.order ?: return
         if (scannedQr != order.qrCode) {
