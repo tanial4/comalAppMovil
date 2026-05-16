@@ -20,7 +20,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
@@ -36,6 +38,7 @@ import com.example.comalapp.ui.components.shared.AppSwitch
 import com.example.comalapp.ui.components.shared.AppTextField
 import com.example.comalapp.ui.components.shared.AppTextFieldType
 import com.example.comalapp.ui.components.shared.BrandLogo
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.components.shared.SelectOption
 import com.example.comalapp.ui.viewmodel.AdminProductFormViewModel
 
@@ -58,6 +61,7 @@ fun AdminProductFormScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDiscardConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.saved) {
         if (uiState.saved) onSaved()
@@ -68,6 +72,20 @@ fun AdminProductFormScreen(
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
         }
+    }
+
+    if (showDiscardConfirm) {
+        ConfirmDialog(
+            title = "Descartar cambios",
+            message = "¿Estás seguro de que deseas salir? Los cambios no guardados se perderán.",
+            confirmText = "Descartar",
+            dismissText = "Seguir editando",
+            onConfirm = {
+                showDiscardConfirm = false
+                onBack()
+            },
+            onDismiss = { showDiscardConfirm = false },
+        )
     }
 
     Scaffold(
@@ -236,7 +254,7 @@ fun AdminProductFormScreen(
 
             AppButton(
                 text = "Cancelar",
-                onClick = onBack,
+                onClick = { showDiscardConfirm = true },
                 variant = AppButtonVariant.Danger,
                 enabled = !uiState.isLoading,
                 modifier = Modifier.fillMaxWidth(),

@@ -11,7 +11,7 @@ import kotlinx.coroutines.tasks.await
 
 class AuthRepository(
     private val authSource: FirebaseAuthSource,
-    private val firestoreSource: FirestoreSource
+    private val firestoreSource: FirestoreSource,
 ) {
 
     suspend fun register(email: String, password: String): Result<Unit> = runCatching {
@@ -33,6 +33,10 @@ class AuthRepository(
             .await()
 
         snapshot.toObject(User::class.java)!!.copy(uid = firebaseUser.uid)
+    }
+
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> = runCatching {
+        authSource.sendPasswordResetEmail(email)
     }
 
     fun logout() {

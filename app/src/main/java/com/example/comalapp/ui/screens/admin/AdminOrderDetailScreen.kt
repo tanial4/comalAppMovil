@@ -6,13 +6,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,7 +29,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +43,7 @@ import com.example.comalapp.ui.components.admin.OrderActionsCard
 import com.example.comalapp.ui.components.admin.OrderDetailInfoCard
 import com.example.comalapp.ui.components.admin.OrderProductsCard
 import com.example.comalapp.ui.components.admin.OrderProgressBar
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.viewmodel.AdminOrderDetailViewModel
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -66,11 +69,10 @@ fun AdminOrderDetailScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showCancelConfirm by remember { mutableStateOf(false) }
 
     val qrLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
-        result.contents?.let { scannedQr ->
-            viewModel.validateQrAndDeliver(scannedQr)
-        }
+        result.contents?.let { viewModel.validateQrAndDeliver(it) }
     }
 
     LaunchedEffect(uiState.error) {
@@ -81,25 +83,28 @@ fun AdminOrderDetailScreen(
     }
 
     if (uiState.qrError) {
-        AlertDialog(
-            onDismissRequest = { viewModel.clearQrError() },
-            title = {
-                Text(
-                    text = "QR inválido",
-                    style = MaterialTheme.typography.titleMedium,
-                )
+        ConfirmDialog(
+            title = "QR inválido",
+            message = "El código QR escaneado no corresponde a esta orden. Verifica que estés escaneando el ticket correcto.",
+            confirmText = "Entendido",
+            confirmColor = MaterialTheme.colorScheme.primary,
+            dismissText = null,
+            onConfirm = { viewModel.clearQrError() },
+            onDismiss = { viewModel.clearQrError() },
+        )
+    }
+
+    if (showCancelConfirm) {
+        ConfirmDialog(
+            title = "Cancelar orden",
+            message = "¿Estás seguro de que deseas cancelar la orden #${orderId.takeLast(5).uppercase()}? Esta acción no se puede deshacer.",
+            confirmText = "Cancelar orden",
+            dismissText = "Mantener",
+            onConfirm = {
+                showCancelConfirm = false
+                viewModel.cancelOrder()
             },
-            text = {
-                Text(
-                    text = "El código QR escaneado no corresponde a esta orden. Verifica que estés escaneando el ticket correcto.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.clearQrError() }) {
-                    Text("Entendido")
-                }
-            },
+            onDismiss = { showCancelConfirm = false },
         )
     }
 
@@ -189,6 +194,19 @@ fun AdminOrderDetailScreen(
                         },
                         onRevertStatus = { viewModel.revertStatus() },
                     )
+                }
+
+                if (order.status != "cancelled" && order.status != "delivered") {
+                    TextButton(
+                        onClick = { showCancelConfirm = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = "Cancelar orden",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

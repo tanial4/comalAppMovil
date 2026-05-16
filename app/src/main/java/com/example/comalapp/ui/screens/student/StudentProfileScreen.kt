@@ -34,7 +34,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.comalapp.ComalApplication
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.components.student.StudentScaffold
 import com.example.comalapp.ui.navigation.AppDestinations
 import com.example.comalapp.ui.viewmodel.StudentProfileViewModel
@@ -72,6 +75,21 @@ fun StudentProfileScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    if (showLogoutDialog) {
+        ConfirmDialog(
+            title = "Cerrar sesión",
+            message = "¿Estás seguro de que deseas cerrar sesión?",
+            confirmText = "Cerrar sesión",
+            onConfirm = {
+                showLogoutDialog = false
+                viewModel.logout()
+                onLogout()
+            },
+            onDismiss = { showLogoutDialog = false },
+        )
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -233,10 +251,7 @@ fun StudentProfileScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 ) {
                     TextButton(
-                        onClick = {
-                            viewModel.logout()
-                            onLogout()
-                        },
+                        onClick = { showLogoutDialog = true },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(4.dp),

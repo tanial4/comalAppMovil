@@ -3,7 +3,10 @@ package com.example.comalapp.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.comalapp.data.model.User
+import com.example.comalapp.data.repository.AuthRepository
 import com.example.comalapp.data.repository.OrderRepository
+import com.example.comalapp.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class WorkerQrScannerUiState(
+    val user: User? = null,
     val isProcessing: Boolean = false,
     val deliverySuccess: Boolean = false,
     val deliveredOrderId: String? = null,
@@ -19,11 +23,26 @@ data class WorkerQrScannerUiState(
 )
 
 class WorkerQrScannerViewModel(
+    private val authRepository: AuthRepository,
+    private val userRepository: UserRepository,
     private val orderRepository: OrderRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkerQrScannerUiState())
     val uiState: StateFlow<WorkerQrScannerUiState> = _uiState.asStateFlow()
+
+    init {
+        loadUser()
+    }
+
+    private fun loadUser() {
+        val uid = authRepository.currentUserId() ?: return
+        viewModelScope.launch {
+            userRepository.getUserById(uid).onSuccess { user ->
+                _uiState.value = _uiState.value.copy(user = user)
+            }
+        }
+    }
 
     fun processScannedQr(scannedQr: String) {
         viewModelScope.launch {
@@ -67,10 +86,12 @@ class WorkerQrScannerViewModel(
     }
 
     class Factory(
+        private val authRepository: AuthRepository,
+        private val userRepository: UserRepository,
         private val orderRepository: OrderRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            WorkerQrScannerViewModel(orderRepository) as T
+            WorkerQrScannerViewModel(authRepository, userRepository, orderRepository) as T
     }
 }

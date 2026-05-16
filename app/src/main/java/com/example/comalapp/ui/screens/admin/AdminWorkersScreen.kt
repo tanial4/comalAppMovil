@@ -29,7 +29,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.comalapp.ComalApplication
 import com.example.comalapp.ui.components.admin.AdminScaffold
 import com.example.comalapp.ui.components.admin.AdminUserCard
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.viewmodel.AdminWorkersViewModel
 
 @Composable
@@ -62,6 +65,25 @@ fun AdminWorkersScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+    var pendingDeleteName by remember { mutableStateOf("") }
+
+    if (pendingDeleteId != null) {
+        ConfirmDialog(
+            title = "Eliminar trabajador",
+            message = "¿Estás seguro de que deseas eliminar a \"$pendingDeleteName\"? Esta acción no se puede deshacer.",
+            confirmText = "Eliminar",
+            onConfirm = {
+                viewModel.deleteWorker(pendingDeleteId!!)
+                pendingDeleteId = null
+                pendingDeleteName = ""
+            },
+            onDismiss = {
+                pendingDeleteId = null
+                pendingDeleteName = ""
+            },
+        )
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -106,6 +128,7 @@ fun AdminWorkersScreen(
                                 onValueChange = { viewModel.onSearchQueryChange(it) },
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .padding(horizontal = Alignment.Start.let { 16.dp })
                                     .padding(horizontal = 16.dp)
                                     .padding(top = 8.dp),
                                 placeholder = {
@@ -175,7 +198,10 @@ fun AdminWorkersScreen(
                                     orderCount = workerWithStats.orderCount,
                                     totalSpent = 0.0,
                                     lastOrderDate = null,
-                                    onDelete = { viewModel.deleteWorker(workerWithStats.user.uid) },
+                                    onDelete = {
+                                        pendingDeleteId = workerWithStats.user.uid
+                                        pendingDeleteName = workerWithStats.user.fullName
+                                    },
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
                             }

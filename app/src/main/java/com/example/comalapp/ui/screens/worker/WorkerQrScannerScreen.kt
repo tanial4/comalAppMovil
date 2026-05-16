@@ -53,6 +53,8 @@ fun WorkerQrScannerScreen(
     val container = (context.applicationContext as ComalApplication).container
     val viewModel: WorkerQrScannerViewModel = viewModel(
         factory = WorkerQrScannerViewModel.Factory(
+            authRepository = container.authRepository,
+            userRepository = container.userRepository,
             orderRepository = container.orderRepository,
         )
     )
@@ -99,8 +101,8 @@ fun WorkerQrScannerScreen(
         label = "TRABAJADOR",
         title = "Escanear QR",
         subtitle = "Confirmar entregas",
-        userName = "",
-        userEmail = "",
+        userName = uiState.user?.fullName ?: "",
+        userEmail = uiState.user?.email ?: "",
         onLogout = onLogout,
         onNavigate = onNavigate,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -143,7 +145,9 @@ fun WorkerQrScannerScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { viewModel.clearDeliverySuccess() },
-                            colors = ButtonDefaults.buttonColors(containerColor = violet),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
                         ) {
                             Text("Escanear otra")
                         }
@@ -159,7 +163,7 @@ fun WorkerQrScannerScreen(
                         Icon(
                             imageVector = Icons.Outlined.QrCodeScanner,
                             contentDescription = null,
-                            tint = violet,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(80.dp),
                         )
                         Text(
@@ -185,7 +189,9 @@ fun WorkerQrScannerScreen(
                                 qrLauncher.launch(options)
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = violet),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
                         ) {
                             Text("Abrir escáner")
                         }
