@@ -42,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.comalapp.ComalApplication
 import com.example.comalapp.ui.components.admin.AdminProductCard
 import com.example.comalapp.ui.components.admin.AdminScaffold
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.viewmodel.AdminProductsViewModel
 
 @Composable
@@ -66,6 +67,8 @@ fun AdminProductsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery by remember { mutableStateOf("") }
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+    var pendingDeleteName by remember { mutableStateOf("") }
 
     val filteredProducts = remember(searchQuery, uiState.products) {
         if (searchQuery.isBlank()) uiState.products
@@ -73,6 +76,23 @@ fun AdminProductsScreen(
             it.name.contains(searchQuery, ignoreCase = true) ||
                     it.description.contains(searchQuery, ignoreCase = true)
         }
+    }
+
+    if (pendingDeleteId != null) {
+        ConfirmDialog(
+            title = "Eliminar producto",
+            message = "¿Estás seguro de que deseas eliminar \"$pendingDeleteName\"? Esta acción no se puede deshacer.",
+            confirmText = "Eliminar",
+            onConfirm = {
+                viewModel.deleteProduct(pendingDeleteId!!)
+                pendingDeleteId = null
+                pendingDeleteName = ""
+            },
+            onDismiss = {
+                pendingDeleteId = null
+                pendingDeleteName = ""
+            },
+        )
     }
 
     LaunchedEffect(uiState.error) {
@@ -185,7 +205,10 @@ fun AdminProductsScreen(
                                 AdminProductCard(
                                     product = product,
                                     onEdit = { onEditProduct(product.id) },
-                                    onDelete = { viewModel.deleteProduct(product.id) },
+                                    onDelete = {
+                                        pendingDeleteId = product.id
+                                        pendingDeleteName = product.name
+                                    },
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
                             }

@@ -91,18 +91,19 @@ class AdminOrderDetailViewModel(
         }
     }
 
-    fun validateQrAndDeliver(scannedQr: String) {
+    fun advanceStatus() {
         val order = _uiState.value.order ?: return
-        if (scannedQr != order.qrCode) {
-            _uiState.value = _uiState.value.copy(qrError = true)
-            return
+        val nextStatus = when (order.status) {
+            "pending"   -> "preparing"
+            "preparing" -> "ready"
+            else        -> return
         }
         viewModelScope.launch {
             orderRepository.updateOrderStatus(
                 orderId = orderId,
                 currentStatus = order.status,
-                newStatus = "delivered",
-                requestedByRole = "worker",
+                newStatus = nextStatus,
+                requestedByRole = _uiState.value.adminUser?.role ?: "admin",
             ).onFailure { error ->
                 _uiState.value = _uiState.value.copy(error = error.message)
             }
@@ -128,31 +129,44 @@ class AdminOrderDetailViewModel(
         }
     }
 
+    fun cancelOrder() {
+        val order = _uiState.value.order ?: return
+        viewModelScope.launch {
+            orderRepository.updateOrderStatus(
+                orderId = orderId,
+                currentStatus = order.status,
+                newStatus = "cancelled",
+                requestedByRole = _uiState.value.adminUser?.role ?: "admin",
+            ).onFailure { error ->
+                _uiState.value = _uiState.value.copy(error = error.message)
+            }
+        }
+    }
+
+    fun validateQrAndDeliver(scannedQr: String) {
+        val order = _uiState.value.order ?: return
+        if (scannedQr != order.qrCode) {
+            _uiState.value = _uiState.value.copy(qrError = true)
+            return
+        }
+        viewModelScope.launch {
+            orderRepository.updateOrderStatus(
+                orderId = orderId,
+                currentStatus = order.status,
+                newStatus = "delivered",
+                requestedByRole = "worker",
+            ).onFailure { error ->
+                _uiState.value = _uiState.value.copy(error = error.message)
+            }
+        }
+    }
+
     fun clearQrError() {
         _uiState.value = _uiState.value.copy(qrError = false)
     }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
-    }
-
-    fun advanceStatus() {
-        val order = _uiState.value.order ?: return
-        val nextStatus = when (order.status) {
-            "pending"   -> "preparing"
-            "preparing" -> "ready"
-            else        -> return
-        }
-        viewModelScope.launch {
-            orderRepository.updateOrderStatus(
-                orderId = orderId,
-                currentStatus = order.status,
-                newStatus = nextStatus,
-                requestedByRole = _uiState.value.adminUser?.role ?: "admin",
-            ).onFailure { error ->
-                _uiState.value = _uiState.value.copy(error = error.message)
-            }
-        }
     }
 
     class Factory(
@@ -163,14 +177,13 @@ class AdminOrderDetailViewModel(
         private val productRepository: ProductRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return AdminOrderDetailViewModel(
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            AdminOrderDetailViewModel(
                 orderId,
                 authRepository,
                 userRepository,
                 orderRepository,
                 productRepository,
             ) as T
-        }
     }
 }

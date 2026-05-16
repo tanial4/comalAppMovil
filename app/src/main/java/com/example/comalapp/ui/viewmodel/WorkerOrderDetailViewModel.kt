@@ -17,6 +17,7 @@ data class WorkerOrderDetailUiState(
     val summaryItems: List<OrderSummaryItem> = emptyList(),
     val isLoading: Boolean = false,
     val qrError: Boolean = false,
+    val deliverySuccess: Boolean = false,
     val error: String? = null,
 )
 
@@ -94,25 +95,6 @@ class WorkerOrderDetailViewModel(
         }
     }
 
-    fun revertStatus() {
-        val order = _uiState.value.order ?: return
-        val previousStatus = when (order.status) {
-            "preparing" -> "pending"
-            "ready"     -> "preparing"
-            else        -> return
-        }
-        viewModelScope.launch {
-            orderRepository.updateOrderStatus(
-                orderId = orderId,
-                currentStatus = order.status,
-                newStatus = previousStatus,
-                requestedByRole = "worker",
-            ).onFailure { error ->
-                _uiState.value = _uiState.value.copy(error = error.message)
-            }
-        }
-    }
-
     fun validateQrAndDeliver(scannedQr: String) {
         val order = _uiState.value.order ?: return
         if (scannedQr != order.qrCode) {
@@ -125,7 +107,9 @@ class WorkerOrderDetailViewModel(
                 currentStatus = order.status,
                 newStatus = "delivered",
                 requestedByRole = "worker",
-            ).onFailure { error ->
+            ).onSuccess {
+                _uiState.value = _uiState.value.copy(deliverySuccess = true)
+            }.onFailure { error ->
                 _uiState.value = _uiState.value.copy(error = error.message)
             }
         }

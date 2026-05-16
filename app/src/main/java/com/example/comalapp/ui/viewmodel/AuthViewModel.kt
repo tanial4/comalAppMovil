@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.comalapp.data.model.User
 import com.example.comalapp.data.repository.AuthRepository
 import com.example.comalapp.data.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuthException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ sealed class AuthUiState {
     data object Loading : AuthUiState()
     data class LoginSuccess(val role: String) : AuthUiState()
     data object RegisterSuccess : AuthUiState()
+    data object ForgotPasswordSuccess : AuthUiState()
     data class Error(val message: String) : AuthUiState()
 }
 
@@ -35,7 +37,7 @@ class AuthViewModel(
                     _uiState.value = AuthUiState.LoginSuccess(user.role)
                 }
                 .onFailure { error ->
-                    _uiState.value = AuthUiState.Error(error.message ?: "Error al iniciar sesión")
+                    _uiState.value = AuthUiState.Error(mapAuthError(error))
                 }
         }
     }
@@ -64,11 +66,22 @@ class AuthViewModel(
                     userRepository.createUser(user)
                         .onSuccess { _uiState.value = AuthUiState.RegisterSuccess }
                         .onFailure { error ->
-                            _uiState.value = AuthUiState.Error(error.message ?: "Error al crear el perfil")
+                            _uiState.value = AuthUiState.Error(mapAuthError(error))
                         }
                 }
                 .onFailure { error ->
-                    _uiState.value = AuthUiState.Error(error.message ?: "Error al registrarse")
+                    _uiState.value = AuthUiState.Error(mapAuthError(error))
+                }
+        }
+    }
+
+    fun sendPasswordReset(email: String) {
+        viewModelScope.launch {
+            _uiState.value = AuthUiState.Loading
+            authRepository.sendPasswordResetEmail(email)
+                .onSuccess { _uiState.value = AuthUiState.ForgotPasswordSuccess }
+                .onFailure { error ->
+                    _uiState.value = AuthUiState.Error(mapAuthError(error))
                 }
         }
     }
@@ -82,8 +95,34 @@ class AuthViewModel(
         private val userRepository: UserRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return AuthViewModel(authRepository, userRepository) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            AuthViewModel(authRepository, userRepository) as T
+    }
+}
+
+private fun mapAuthError(error: Throwable): String {
+    val code = (error as? FirebaseAuthException)?.errorCode ?: ""
+    return when {
+        code.contains("wrong-password", ignoreCase = true)
+                || code.contains("INVALID_LOGIN_CREDENTIALS", ignoreCase = true)
+                || code.contains("invalid-credential", ignoreCase = true) ->
+            "Correo o contraseña incorrectos"
+        code.contains("user-not-found", ignoreCase = true) ->
+            "No existe una cuenta con este correo"
+        code.contains("invalid-email", ignoreCase = true) ->
+            "El correo electrónico no es válido"
+        code.contains("user-disabled", ignoreCase = true) ->
+            "Esta cuenta ha sido deshabilitada"
+        code.contains("email-already-in-use", ignoreCase = true) ->
+            "Ya existe una cuenta con este correo"
+        code.contains("weak-password", ignoreCase = true) ->
+            "La contraseña debe tener al menos 6 caracteres"
+        code.contains("network-request-failed", ignoreCase = true) ->
+            "Error de conexión. Verifica tu internet"
+        code.contains("too-many-requests", ignoreCase = true) ->
+            "Demasiados intentos fallidos. Intenta más tarde"
+        code.contains("operation-not-allowed", ignoreCase = true) ->
+            "Operación no permitida"
+        else -> error.message ?: "Ocurrió un error inesperado"
     }
 }

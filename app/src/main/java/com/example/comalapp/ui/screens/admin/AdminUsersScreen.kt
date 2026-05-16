@@ -26,7 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.comalapp.ComalApplication
 import com.example.comalapp.ui.components.admin.AdminScaffold
 import com.example.comalapp.ui.components.admin.AdminUserCard
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.viewmodel.AdminUsersViewModel
 
 @Composable
@@ -58,6 +61,25 @@ fun AdminUsersScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+    var pendingDeleteName by remember { mutableStateOf("") }
+
+    if (pendingDeleteId != null) {
+        ConfirmDialog(
+            title = "Eliminar usuario",
+            message = "¿Estás seguro de que deseas eliminar a \"$pendingDeleteName\"? Esta acción no se puede deshacer.",
+            confirmText = "Eliminar",
+            onConfirm = {
+                viewModel.deleteUser(pendingDeleteId!!)
+                pendingDeleteId = null
+                pendingDeleteName = ""
+            },
+            onDismiss = {
+                pendingDeleteId = null
+                pendingDeleteName = ""
+            },
+        )
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -171,7 +193,10 @@ fun AdminUsersScreen(
                                     orderCount = userWithStats.orderCount,
                                     totalSpent = userWithStats.totalSpent,
                                     lastOrderDate = userWithStats.lastOrderDate,
-                                    onDelete = { viewModel.deleteUser(userWithStats.user.uid) },
+                                    onDelete = {
+                                        pendingDeleteId = userWithStats.user.uid
+                                        pendingDeleteName = userWithStats.user.fullName
+                                    },
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
                             }

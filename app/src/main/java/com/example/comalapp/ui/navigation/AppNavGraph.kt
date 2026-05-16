@@ -26,6 +26,7 @@ import com.example.comalapp.ui.screens.admin.AdminProductsScreen
 import com.example.comalapp.ui.screens.admin.AdminUsersScreen
 import com.example.comalapp.ui.screens.admin.AdminWorkerFormScreen
 import com.example.comalapp.ui.screens.admin.AdminWorkersScreen
+import com.example.comalapp.ui.screens.auth.ForgotPasswordScreen
 import com.example.comalapp.ui.screens.auth.LoginScreen
 import com.example.comalapp.ui.screens.auth.RegisterScreen
 import com.example.comalapp.ui.screens.student.StudentCartScreen
@@ -179,6 +180,15 @@ fun AppNavGraph(
                 onNavigateToRegister = {
                     navController.navigate(AppDestinations.REGISTER)
                 },
+                onNavigateToForgotPassword = {
+                    navController.navigate(AppDestinations.FORGOT_PASSWORD)
+                },
+            )
+        }
+
+        composable(AppDestinations.FORGOT_PASSWORD) {
+            ForgotPasswordScreen(
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

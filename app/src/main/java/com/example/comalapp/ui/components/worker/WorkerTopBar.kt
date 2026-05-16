@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.theme.violet
 
 @Composable
@@ -48,6 +49,20 @@ fun WorkerTopBar(
     extraContent: @Composable (() -> Unit)? = null,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    if (showLogoutDialog) {
+        ConfirmDialog(
+            title = "Cerrar sesión",
+            message = "¿Estás seguro de que deseas cerrar sesión?",
+            confirmText = "Cerrar sesión",
+            onConfirm = {
+                showLogoutDialog = false
+                onLogout()
+            },
+            onDismiss = { showLogoutDialog = false },
+        )
+    }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -170,7 +185,7 @@ fun WorkerTopBar(
                             },
                             onClick = {
                                 menuExpanded = false
-                                onLogout()
+                                showLogoutDialog = true
                             },
                         )
                     }

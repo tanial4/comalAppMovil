@@ -16,9 +16,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,14 +37,15 @@ import com.example.comalapp.ui.components.shared.AppButtonVariant
 import com.example.comalapp.ui.components.shared.AppTextField
 import com.example.comalapp.ui.components.shared.AppTextFieldType
 import com.example.comalapp.ui.components.shared.BrandLogo
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.viewmodel.AuthUiState
 import com.example.comalapp.ui.viewmodel.AuthViewModel
-import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: (role: String) -> Unit,
     onNavigateToRegister: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -57,25 +58,35 @@ fun LoginScreen(
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var authError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState) {
         when (val state = uiState) {
             is AuthUiState.LoginSuccess -> onLoginSuccess(state.role)
             is AuthUiState.Error -> {
-                snackbarHostState.showSnackbar(state.message)
+                authError = state.message
                 viewModel.resetState()
             }
             else -> Unit
         }
     }
 
+    if (authError != null) {
+        ConfirmDialog(
+            title = "Error al iniciar sesión",
+            message = authError!!,
+            confirmText = "Entendido",
+            confirmColor = MaterialTheme.colorScheme.primary,
+            dismissText = null,
+            onConfirm = { authError = null },
+            onDismiss = { authError = null },
+        )
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier,
     ) { innerPadding ->
         Box(
@@ -143,7 +154,22 @@ fun LoginScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            TextButton(
+                                onClick = onNavigateToForgotPassword,
+                                modifier = Modifier.align(Alignment.CenterEnd),
+                            ) {
+                                Text(
+                                    text = "¿Olvidaste tu contraseña?",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         AppButton(
                             text = "Iniciar sesión",

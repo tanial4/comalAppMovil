@@ -3,6 +3,7 @@ package com.example.comalapp.ui.navigation
 object AppDestinations {
     const val LOGIN = "login"
     const val REGISTER = "register"
+    const val FORGOT_PASSWORD = "forgot_password"
     const val STUDENT_GRAPH = "student"
     const val STUDENT_HOME = "student/home"
     const val STUDENT_MENU = "student/menu"
