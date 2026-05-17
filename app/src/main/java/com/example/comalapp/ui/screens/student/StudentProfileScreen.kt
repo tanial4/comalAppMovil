@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ListAlt
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Card
@@ -34,7 +35,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.comalapp.ComalApplication
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.components.student.StudentScaffold
 import com.example.comalapp.ui.navigation.AppDestinations
 import com.example.comalapp.ui.viewmodel.StudentProfileViewModel
@@ -72,6 +76,44 @@ fun StudentProfileScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showPasswordResetDialog by remember { mutableStateOf(false) }
+
+    if (showLogoutDialog) {
+        ConfirmDialog(
+            title = "Cerrar sesión",
+            message = "¿Estás seguro de que deseas cerrar sesión?",
+            confirmText = "Cerrar sesión",
+            onConfirm = {
+                showLogoutDialog = false
+                viewModel.logout()
+                onLogout()
+            },
+            onDismiss = { showLogoutDialog = false },
+        )
+    }
+
+    if (showPasswordResetDialog) {
+        ConfirmDialog(
+            title = "Cambiar contraseña",
+            message = "Se enviará un correo a ${uiState.user?.email ?: "tu correo"} con las instrucciones para cambiar tu contraseña.",
+            confirmText = "Enviar correo",
+            confirmColor = MaterialTheme.colorScheme.primary,
+            dismissText = "Cancelar",
+            onConfirm = {
+                showPasswordResetDialog = false
+                viewModel.sendPasswordReset()
+            },
+            onDismiss = { showPasswordResetDialog = false },
+        )
+    }
+
+    LaunchedEffect(uiState.passwordResetSent) {
+        if (uiState.passwordResetSent) {
+            snackbarHostState.showSnackbar("Correo enviado. Revisa tu bandeja de entrada.")
+            viewModel.clearPasswordResetSent()
+        }
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -222,6 +264,16 @@ fun StudentProfileScreen(
                         subtitle = "Avisos de tus pedidos",
                         onClick = { },
                     )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    ProfileItem(
+                        icon = Icons.Outlined.Lock,
+                        title = "Cambiar contraseña",
+                        subtitle = "Recibirás un correo con las instrucciones",
+                        onClick = { showPasswordResetDialog = true },
+                    )
                 }
 
                 Card(
@@ -233,10 +285,7 @@ fun StudentProfileScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 ) {
                     TextButton(
-                        onClick = {
-                            viewModel.logout()
-                            onLogout()
-                        },
+                        onClick = { showLogoutDialog = true },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(4.dp),

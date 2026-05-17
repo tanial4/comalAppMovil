@@ -1,4 +1,4 @@
-package com.example.comalapp.ui.components.admin
+package com.example.comalapp.ui.components.worker
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,18 +33,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.example.comalapp.ui.components.shared.BrandLogo
 import com.example.comalapp.ui.components.shared.ConfirmDialog
+import com.example.comalapp.ui.theme.violet
 
 @Composable
-fun AdminTopBar(
+fun WorkerTopBar(
     title: String,
+    label: String,
     subtitle: String,
     userName: String,
     userEmail: String,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
-    label: String = "",
+    onBack: (() -> Unit)? = null,
+    extraContent: @Composable (() -> Unit)? = null,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -75,23 +79,29 @@ fun AdminTopBar(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                BrandLogo(
-                    modifier = Modifier
-                        .height(40.dp)
-                        .weight(1f),
-                )
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
 
                 Box {
                     Box(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f))
                             .clickable { menuExpanded = true },
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = userName.firstOrNull()?.uppercase() ?: "A",
+                            text = userName.firstOrNull()?.uppercase() ?: "W",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
@@ -116,7 +126,7 @@ fun AdminTopBar(
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
-                                        text = userName.firstOrNull()?.uppercase() ?: "A",
+                                        text = userName.firstOrNull()?.uppercase() ?: "W",
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.onPrimary,
                                     )
@@ -144,14 +154,14 @@ fun AdminTopBar(
                                 Icon(
                                     imageVector = Icons.Outlined.Shield,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = violet,
                                     modifier = Modifier.size(14.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Administrador",
+                                    text = "Trabajador",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    color = violet,
                                 )
                             }
                         }
@@ -207,6 +217,8 @@ fun AdminTopBar(
                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
                 )
             }
+
+            extraContent?.invoke()
         }
     }
 }

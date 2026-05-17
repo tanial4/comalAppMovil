@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.comalapp.data.model.Product
 import com.example.comalapp.data.repository.AuthRepository
+import com.example.comalapp.data.repository.NotificationRepository
 import com.example.comalapp.data.repository.OrderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ data class StudentCartUiState(
 class StudentCartViewModel(
     private val orderRepository: OrderRepository,
     private val authRepository: AuthRepository,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StudentCartUiState())
@@ -80,6 +82,13 @@ class StudentCartViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
             orderRepository.createOrder(userId, pairs)
                 .onSuccess { orderId ->
+                    notificationRepository.createNotification(
+                        userId = userId,
+                        orderId = orderId,
+                        title = "Orden recibida",
+                        message = "Tu orden #${orderId.takeLast(5).uppercase()} fue recibida y está en cola de preparación.",
+                        type = "pending",
+                    )
                     _uiState.value = _uiState.value.copy(
                         items = emptyList(),
                         isLoading = false,
@@ -110,10 +119,10 @@ class StudentCartViewModel(
     class Factory(
         private val orderRepository: OrderRepository,
         private val authRepository: AuthRepository,
+        private val notificationRepository: NotificationRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return StudentCartViewModel(orderRepository, authRepository) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            StudentCartViewModel(orderRepository, authRepository, notificationRepository) as T
     }
 }

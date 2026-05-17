@@ -104,7 +104,7 @@ fun StudentOrderStatusScreen(
                         },
                         title = { },
                         actions = {
-                            IconButton(onClick = { }) {
+                            IconButton(onClick = { viewModel.refresh() }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Refresh,
                                     contentDescription = null,

@@ -18,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
@@ -31,8 +33,17 @@ import com.example.comalapp.ui.components.shared.AppButtonVariant
 import com.example.comalapp.ui.components.shared.AppTextField
 import com.example.comalapp.ui.components.shared.AppTextFieldType
 import com.example.comalapp.ui.components.shared.BrandLogo
+import com.example.comalapp.ui.components.shared.ConfirmDialog
 import com.example.comalapp.ui.viewmodel.AdminWorkerFormViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminWorkerFormScreen(
     onBack: () -> Unit,
@@ -50,9 +61,16 @@ fun AdminWorkerFormScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDiscardConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.saved) {
-        if (uiState.saved) onSaved()
+        if (uiState.saved) {
+            snackbarHostState.showSnackbar(
+                message = "Trabajador creado correctamente",
+                duration = androidx.compose.material3.SnackbarDuration.Short,
+            )
+            onSaved()
+        }
     }
 
     LaunchedEffect(uiState.error) {
@@ -62,35 +80,59 @@ fun AdminWorkerFormScreen(
         }
     }
 
+    if (showDiscardConfirm) {
+        ConfirmDialog(
+            title = "Descartar cambios",
+            message = "¿Estás seguro de que deseas salir? Los datos ingresados se perderán.",
+            confirmText = "Descartar",
+            dismissText = "Seguir editando",
+            onConfirm = {
+                showDiscardConfirm = false
+                onBack()
+            },
+            onDismiss = { showDiscardConfirm = false },
+        )
+    }
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Surface(color = MaterialTheme.colorScheme.primary) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 48.dp, bottom = 20.dp),
-                ) {
-                    BrandLogo(
+                Column {
+                    TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                        navigationIcon = {
+                            IconButton(onClick = { showDiscardConfirm = true }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                        title = { },
+                    )
+                    Column(
                         modifier = Modifier
-                            .height(40.dp)
-                            .fillMaxWidth(),
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "PERSONAL",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Nuevo trabajador",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 20.dp),
+                    ) {
+                        Text(
+                            text = "PERSONAL",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Nuevo trabajador",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
                 }
             }
         },
@@ -198,7 +240,7 @@ fun AdminWorkerFormScreen(
 
             AppButton(
                 text = "Cancelar",
-                onClick = onBack,
+                onClick = { showDiscardConfirm = true },
                 variant = AppButtonVariant.Secondary,
                 enabled = !uiState.isLoading,
                 modifier = Modifier.fillMaxWidth(),

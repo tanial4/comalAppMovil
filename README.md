@@ -1,0 +1,387 @@
+# ComalApp
+
+A mobile ordering application for university cafeterias built with Kotlin and Jetpack Compose. ComalApp connects students, kitchen workers, and administrators through a real-time order management system backed by Firebase.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Features by Role](#features-by-role)
+- [Project Structure](#project-structure)
+- [Data Models](#data-models)
+- [Firebase Setup](#firebase-setup)
+- [Installation](#installation)
+- [Dependencies](#dependencies)
+- [Navigation](#navigation)
+
+---
+
+## Overview
+
+ComalApp is a three-role cafeteria ordering system:
+
+- **Students** browse the menu, place orders, track their status in real time, and receive push notifications when their order is ready.
+- **Workers** manage incoming orders, update their status, toggle product availability, and confirm deliveries by scanning a QR code.
+- **Administrators** manage the full product catalog, user accounts, worker accounts, and monitor all orders.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Language | Kotlin |
+| UI | Jetpack Compose + Material3 |
+| Architecture | MVVM + Repository pattern |
+| Authentication | Firebase Auth |
+| Database | Cloud Firestore |
+| File Storage | Firebase Storage |
+| Navigation | Navigation Compose |
+| Image Loading | Coil |
+| QR Scanning | ZXing Android Embedded |
+| Dependency Injection | Manual (AppContainer) |
+
+---
+
+## Architecture
+
+The project follows a clean MVVM architecture with a manual dependency injection container.
+
+```
+app/
+├── data/
+│   ├── model/          # Data classes
+│   ├── repository/     # Repository layer (Firestore + Auth)
+│   └── source/         # Firebase data sources
+├── ui/
+│   ├── components/     # Reusable Compose components
+│   │   ├── admin/
+│   │   ├── shared/
+│   │   ├── student/
+│   │   └── worker/
+│   ├── navigation/     # NavGraph + AppDestinations
+│   ├── screens/        # Screens organized by role
+│   │   ├── admin/
+│   │   ├── auth/
+│   │   ├── student/
+│   │   └── worker/
+│   ├── theme/          # Colors, typography, theme
+│   └── viewmodel/      # ViewModels per screen
+└── ComalApplication.kt # AppContainer initialization
+```
+
+### Dependency Injection
+
+`AppContainer` is instantiated once in `ComalApplication` and passed down through `LocalContext`. Each screen accesses repositories via `container.xRepository`.
+
+### State Management
+
+Each screen has a dedicated `UiState` data class collected as `StateFlow` via `collectAsStateWithLifecycle`. Shared state across a navigation graph (cart, notifications) is scoped to the graph's `NavBackStackEntry`.
+
+---
+
+## Features by Role
+
+### Student
+
+| Feature | Description |
+|---|---|
+| Registration & Login | Email/password with Firebase Auth |
+| Forgot Password | Reset link sent to registered email |
+| Menu Browsing | Products filtered by category with real-time availability |
+| Cart | Add, increment, decrement and remove items |
+| Order Confirmation | Review screen before placing the order |
+| Order Status | Real-time tracking with timeline (Received → Preparing → Ready → Delivered) |
+| QR Ticket | Generated QR code per order for delivery confirmation |
+| Order History | Full list of past orders with status |
+| Notifications | Real-time in-app notifications for every order status change |
+| Profile | Account info, order stats, change password, logout |
+
+### Worker
+
+| Feature | Description |
+|---|---|
+| Dashboard | Active order counts by status, urgent orders list, quick access cards |
+| Orders List | Filterable list of active orders by status |
+| Product Availability | Toggle products on/off for the current service |
+| Order Detail | View items, advance order status, confirm delivery |
+| QR Scanner | Scan student ticket QR to confirm delivery standalone |
+
+### Admin
+
+| Feature | Description |
+|---|---|
+| Dashboard | Summary stats and quick access |
+| Product Management | Create, edit, delete products with image upload |
+| Order Management | View and manage all orders with full status control |
+| User Management | View and delete student accounts |
+| Worker Management | Create, view and delete worker accounts |
+| Order Detail | Full control: advance, revert and cancel orders |
+
+---
+
+## Project Structure
+
+### Data Models
+
+```kotlin
+User(uid, email, fullName, expediente, role, fcmToken)
+
+Category(id, name)
+
+Product(id, name, description, price, available, imageUrl, categoryId)
+
+Order(id, userId, status, total, productCount, qrCode, createdAt)
+
+OrderItem(id, orderId, productId, quantity, subtotal)
+
+Notification(id, userId, orderId, title, message, type, createdAt, read)
+```
+
+### Order Status Flow
+
+```
+pending → preparing → ready → delivered
+                            ↘ cancelled (admin only)
+```
+
+Delivery from `ready` to `delivered` requires QR scan validation.
+
+### Notification Types
+
+| Type | Trigger | Color |
+|---|---|---|
+| `pending` | Order placed by student | Amber |
+| `preparing` | Order moved to preparing | Blue |
+| `ready` | Order ready for pickup | Green |
+| `delivered` | Order delivered | Gray |
+| `cancelled` | Order cancelled by admin | Red |
+
+---
+
+## Firebase Setup
+
+### 1. Create a Firebase project
+
+1. Go to [Firebase Console](https://console.firebase.google.com)
+2. Create a new project
+3. Register your Android app with package `com.example.comalapp`
+4. Download `google-services.json` and place it in the `app/` directory
+
+### 2. Enable Firebase Services
+
+- **Authentication** → Sign-in method → Email/Password → Enable
+- **Firestore Database** → Create database → Start in production mode
+- **Storage** → Get started
+
+### 3. Firestore Collections
+
+Create the following collections manually or they will be created on first write:
+
+| Collection | Description |
+|---|---|
+| `users` | All user accounts (students, workers, admins) |
+| `categories` | Product categories |
+| `products` | Menu products |
+| `orders` | Customer orders |
+| `orderItems` | Individual items per order |
+| `notifications` | In-app notifications per user |
+
+### 4. Firestore Indexes
+
+The notifications query requires a composite index. On first launch, Firestore will log an error with a direct link to create it automatically. Click the link in Logcat and confirm in the Firebase Console.
+
+Fields: `userId (Ascending)` + `createdAt (Descending)`
+
+### 5. Firestore Security Rules
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+### 6. Storage Security Rules
+
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+### 7. Seed Initial Data
+
+**Create an admin user:**
+1. Firebase Console → Authentication → Add user (email + password)
+2. Firestore → `users` collection → Add document with the user's UID as document ID:
+
+```json
+{
+  "uid": "<firebase-auth-uid>",
+  "email": "admin@comal.com",
+  "fullName": "Administrator",
+  "expediente": "",
+  "role": "admin",
+  "fcmToken": ""
+}
+```
+
+**Create categories:**
+
+Firestore → `categories` → Add documents:
+
+```json
+{ "id": "<auto>", "name": "Bebidas" }
+{ "id": "<auto>", "name": "Comida" }
+{ "id": "<auto>", "name": "Snacks" }
+```
+
+**Add products with images:**
+
+1. Firebase Console → Storage → Upload image to `products/{productId}.jpg`
+2. Copy the **Download URL** (not the `gs://` path)
+3. Firestore → `products` → Add document:
+
+```json
+{
+  "name": "Café Espresso",
+  "description": "Café negro doble shot",
+  "price": 25.0,
+  "available": true,
+  "imageUrl": "<storage-download-url>",
+  "categoryId": "<category-document-id>"
+}
+```
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Android Studio Hedgehog or newer
+- JDK 17
+- Android SDK 26+
+- A Firebase project configured as described above
+
+### Steps
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/comalapp.git
+cd comalapp
+
+# Open in Android Studio
+# File → Open → select the project folder
+
+# Add google-services.json to app/
+# Build → Make Project
+# Run on emulator or physical device
+```
+
+> The app requires internet connectivity. Firebase emulators are not configured by default.
+
+---
+
+## Dependencies
+
+```kotlin
+// Jetpack Compose
+implementation("androidx.compose.ui:ui")
+implementation("androidx.compose.material3:material3")
+implementation("androidx.compose.material:material-icons-extended")
+implementation("androidx.activity:activity-compose")
+
+// Navigation
+implementation("androidx.navigation:navigation-compose:2.7.7")
+
+// Lifecycle
+implementation("androidx.lifecycle:lifecycle-viewmodel-compose")
+implementation("androidx.lifecycle:lifecycle-runtime-compose")
+
+// Firebase
+implementation("com.google.firebase:firebase-auth-ktx")
+implementation("com.google.firebase:firebase-firestore-ktx")
+implementation("com.google.firebase:firebase-storage-ktx")
+implementation("com.google.firebase:firebase-messaging-ktx")
+
+// Image loading
+implementation("io.coil-kt:coil-compose:2.6.0")
+implementation("io.coil-kt:coil-svg:2.6.0")
+
+// QR scanning
+implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+implementation("com.google.zxing:core:3.5.3")
+```
+
+---
+
+## Navigation
+
+The app uses a nested navigation graph structure:
+
+```
+LOGIN
+REGISTER
+FORGOT_PASSWORD
+│
+├── STUDENT_GRAPH
+│   ├── STUDENT_HOME
+│   ├── STUDENT_MENU
+│   ├── STUDENT_CART
+│   ├── STUDENT_ORDER_CONFIRM
+│   ├── STUDENT_ORDER_STATUS/{orderId}
+│   ├── STUDENT_ORDER_HISTORY
+│   ├── STUDENT_TICKET/{orderId}
+│   ├── STUDENT_PROFILE
+│   └── STUDENT_NOTIFICATIONS
+│
+├── WORKER_GRAPH
+│   ├── WORKER_HOME
+│   ├── WORKER_ORDERS
+│   ├── WORKER_PRODUCTS
+│   ├── WORKER_QR_SCANNER
+│   └── WORKER_ORDER_DETAIL/{orderId}
+│
+└── ADMIN_GRAPH
+    ├── ADMIN_DASHBOARD
+    ├── ADMIN_PRODUCTS
+    ├── ADMIN_PRODUCT_FORM?productId={productId}
+    ├── ADMIN_ORDERS
+    ├── ADMIN_ORDER_DETAIL/{orderId}
+    ├── ADMIN_USERS
+    ├── ADMIN_WORKERS
+    └── ADMIN_WORKER_FORM
+```
+
+Session state is observed globally. If Firebase invalidates the auth token, the app automatically redirects to login from any screen. On app launch, if a valid session exists, the user is taken directly to their role's graph without passing through login.
+
+---
+
+## Color Palette
+
+| Token | Value | Usage |
+|---|---|---|
+| `primary` | `#16167A` | Main blue — top bars, buttons |
+| `blueAccent` | `#2929A3` | Secondary blue |
+| `blueHighlight` | `#06B6D4` | Cyan accent |
+| `violet` | `#7C3AED` | Worker role accent |
+| `pendient` | `#F59E0B` | Pending order status |
+| `prep` | `#3B82F6` | Preparing order status |
+| `ready` | `#16A34A` | Ready order status |
+| `delivered` | `#9CA3AF` | Delivered order status |
+| `danger` | `#D32F2F` | Errors and destructive actions |

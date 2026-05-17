@@ -4,52 +4,37 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.comalapp.data.model.Order
-import com.example.comalapp.data.model.User
-import com.example.comalapp.data.repository.AuthRepository
 import com.example.comalapp.data.repository.NotificationRepository
 import com.example.comalapp.data.repository.OrderRepository
 import com.example.comalapp.data.repository.ProductRepository
-import com.example.comalapp.data.repository.UserRepository
 import com.example.comalapp.ui.components.student.OrderSummaryItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class AdminOrderDetailUiState(
+data class WorkerOrderDetailUiState(
     val order: Order? = null,
-    val adminUser: User? = null,
     val summaryItems: List<OrderSummaryItem> = emptyList(),
     val isLoading: Boolean = false,
     val qrError: Boolean = false,
+    val deliverySuccess: Boolean = false,
     val error: String? = null,
 )
 
-class AdminOrderDetailViewModel(
+class WorkerOrderDetailViewModel(
     private val orderId: String,
-    private val authRepository: AuthRepository,
-    private val userRepository: UserRepository,
     private val orderRepository: OrderRepository,
     private val productRepository: ProductRepository,
     private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AdminOrderDetailUiState())
-    val uiState: StateFlow<AdminOrderDetailUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(WorkerOrderDetailUiState())
+    val uiState: StateFlow<WorkerOrderDetailUiState> = _uiState.asStateFlow()
 
     init {
-        loadAdminUser()
         observeOrder()
         loadItems()
-    }
-
-    private fun loadAdminUser() {
-        val uid = authRepository.currentUserId() ?: return
-        viewModelScope.launch {
-            userRepository.getUserById(uid).onSuccess { user ->
-                _uiState.value = _uiState.value.copy(adminUser = user)
-            }
-        }
     }
 
     private fun observeOrder() {
@@ -67,7 +52,7 @@ class AdminOrderDetailViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
             orderRepository.getOrderItems(orderId)
                 .onSuccess { orderItems ->
-                    productRepository.getAvailableProducts()
+                    productRepository.getAllProducts()
                         .onSuccess { products ->
                             val items = orderItems.mapNotNull { item ->
                                 val product = products.find { it.id == item.productId }
@@ -118,7 +103,7 @@ class AdminOrderDetailViewModel(
                 orderId = orderId,
                 currentStatus = order.status,
                 newStatus = nextStatus,
-                requestedByRole = _uiState.value.adminUser?.role ?: "admin",
+                requestedByRole = "worker",
             ).onSuccess {
                 when (nextStatus) {
                     "preparing" -> notifyStudent(
@@ -132,45 +117,6 @@ class AdminOrderDetailViewModel(
                         type = "ready",
                     )
                 }
-            }.onFailure { error ->
-                _uiState.value = _uiState.value.copy(error = error.message)
-            }
-        }
-    }
-
-    fun revertStatus() {
-        val order = _uiState.value.order ?: return
-        val previousStatus = when (order.status) {
-            "preparing" -> "pending"
-            "ready"     -> "preparing"
-            else        -> return
-        }
-        viewModelScope.launch {
-            orderRepository.updateOrderStatus(
-                orderId = orderId,
-                currentStatus = order.status,
-                newStatus = previousStatus,
-                requestedByRole = _uiState.value.adminUser?.role ?: "admin",
-            ).onFailure { error ->
-                _uiState.value = _uiState.value.copy(error = error.message)
-            }
-        }
-    }
-
-    fun cancelOrder() {
-        val order = _uiState.value.order ?: return
-        viewModelScope.launch {
-            orderRepository.updateOrderStatus(
-                orderId = orderId,
-                currentStatus = order.status,
-                newStatus = "cancelled",
-                requestedByRole = _uiState.value.adminUser?.role ?: "admin",
-            ).onSuccess {
-                notifyStudent(
-                    title = "Orden cancelada",
-                    message = "Tu orden #${orderId.takeLast(5).uppercase()} ha sido cancelada.",
-                    type = "cancelled",
-                )
             }.onFailure { error ->
                 _uiState.value = _uiState.value.copy(error = error.message)
             }
@@ -195,6 +141,7 @@ class AdminOrderDetailViewModel(
                     message = "Tu orden #${orderId.takeLast(5).uppercase()} fue entregada. ¡Buen provecho!",
                     type = "delivered",
                 )
+                _uiState.value = _uiState.value.copy(deliverySuccess = true)
             }.onFailure { error ->
                 _uiState.value = _uiState.value.copy(error = error.message)
             }
@@ -211,18 +158,14 @@ class AdminOrderDetailViewModel(
 
     class Factory(
         private val orderId: String,
-        private val authRepository: AuthRepository,
-        private val userRepository: UserRepository,
         private val orderRepository: OrderRepository,
         private val productRepository: ProductRepository,
         private val notificationRepository: NotificationRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            AdminOrderDetailViewModel(
+            WorkerOrderDetailViewModel(
                 orderId,
-                authRepository,
-                userRepository,
                 orderRepository,
                 productRepository,
                 notificationRepository,
