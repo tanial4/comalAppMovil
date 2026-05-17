@@ -30,6 +30,13 @@ import com.example.comalapp.ui.components.worker.WorkerProductCard
 import com.example.comalapp.ui.components.worker.WorkerScaffold
 import com.example.comalapp.ui.theme.violet
 import com.example.comalapp.ui.viewmodel.WorkerProductsViewModel
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material3.Icon
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun WorkerProductsScreen(
@@ -104,11 +111,33 @@ fun WorkerProductsScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = "Sin productos",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Inventory2,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.size(80.dp),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Sin productos",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = if (uiState.selectedCategoryId != null)
+                                    "No hay productos en esta categoría"
+                                else
+                                    "Los productos del menú aparecerán aquí",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                 } else {
                     LazyColumn(

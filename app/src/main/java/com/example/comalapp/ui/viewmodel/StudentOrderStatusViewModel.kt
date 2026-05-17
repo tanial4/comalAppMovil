@@ -88,6 +88,10 @@ class StudentOrderStatusViewModel(
         _uiState.value = _uiState.value.copy(error = null)
     }
 
+    fun refresh() {
+        loadOrderItems()
+    }
+
     class Factory(
         private val orderId: String,
         private val orderRepository: OrderRepository,

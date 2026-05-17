@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ListAlt
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Card
@@ -76,6 +77,7 @@ fun StudentProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showPasswordResetDialog by remember { mutableStateOf(false) }
 
     if (showLogoutDialog) {
         ConfirmDialog(
@@ -89,6 +91,28 @@ fun StudentProfileScreen(
             },
             onDismiss = { showLogoutDialog = false },
         )
+    }
+
+    if (showPasswordResetDialog) {
+        ConfirmDialog(
+            title = "Cambiar contraseña",
+            message = "Se enviará un correo a ${uiState.user?.email ?: "tu correo"} con las instrucciones para cambiar tu contraseña.",
+            confirmText = "Enviar correo",
+            confirmColor = MaterialTheme.colorScheme.primary,
+            dismissText = "Cancelar",
+            onConfirm = {
+                showPasswordResetDialog = false
+                viewModel.sendPasswordReset()
+            },
+            onDismiss = { showPasswordResetDialog = false },
+        )
+    }
+
+    LaunchedEffect(uiState.passwordResetSent) {
+        if (uiState.passwordResetSent) {
+            snackbarHostState.showSnackbar("Correo enviado. Revisa tu bandeja de entrada.")
+            viewModel.clearPasswordResetSent()
+        }
     }
 
     LaunchedEffect(uiState.error) {
@@ -239,6 +263,16 @@ fun StudentProfileScreen(
                         title = "Notificaciones",
                         subtitle = "Avisos de tus pedidos",
                         onClick = { },
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    ProfileItem(
+                        icon = Icons.Outlined.Lock,
+                        title = "Cambiar contraseña",
+                        subtitle = "Recibirás un correo con las instrucciones",
+                        onClick = { showPasswordResetDialog = true },
                     )
                 }
 

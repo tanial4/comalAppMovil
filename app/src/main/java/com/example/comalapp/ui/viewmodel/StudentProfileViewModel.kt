@@ -18,6 +18,7 @@ data class StudentProfileUiState(
     val completedOrders: Int = 0,
     val totalSpent: Double = 0.0,
     val isLoading: Boolean = false,
+    val passwordResetSent: Boolean = false,
     val error: String? = null,
 )
 
@@ -65,8 +66,25 @@ class StudentProfileViewModel(
         }
     }
 
+    fun sendPasswordReset() {
+        val email = _uiState.value.user?.email ?: return
+        viewModelScope.launch {
+            authRepository.sendPasswordResetEmail(email)
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(passwordResetSent = true)
+                }
+                .onFailure { error ->
+                    _uiState.value = _uiState.value.copy(error = error.message)
+                }
+        }
+    }
+
     fun logout() {
         authRepository.logout()
+    }
+
+    fun clearPasswordResetSent() {
+        _uiState.value = _uiState.value.copy(passwordResetSent = false)
     }
 
     fun clearError() {
@@ -79,8 +97,7 @@ class StudentProfileViewModel(
         private val orderRepository: OrderRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return StudentProfileViewModel(authRepository, userRepository, orderRepository) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            StudentProfileViewModel(authRepository, userRepository, orderRepository) as T
     }
 }
