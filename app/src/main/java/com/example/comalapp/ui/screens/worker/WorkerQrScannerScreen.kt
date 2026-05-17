@@ -56,6 +56,7 @@ fun WorkerQrScannerScreen(
             authRepository = container.authRepository,
             userRepository = container.userRepository,
             orderRepository = container.orderRepository,
+            notificationRepository = container.notificationRepository,
         )
     )
 

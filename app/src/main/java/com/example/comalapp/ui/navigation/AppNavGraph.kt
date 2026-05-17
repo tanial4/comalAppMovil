@@ -45,6 +45,7 @@ import com.example.comalapp.ui.screens.worker.WorkerProductsScreen
 import com.example.comalapp.ui.screens.worker.WorkerQrScannerScreen
 import com.example.comalapp.ui.viewmodel.StudentCartViewModel
 import com.example.comalapp.ui.viewmodel.StudentHomeViewModel
+import com.example.comalapp.ui.viewmodel.StudentNotificationsViewModel
 
 private val studentTabRoutes = setOf(
     AppDestinations.STUDENT_HOME,
@@ -113,22 +114,6 @@ private fun navigateAdminTab(
         }
         launchSingleTop = true
         restoreState = true
-    }
-}
-
-private fun navigateAdminSecondary(
-    navController: NavHostController,
-    currentRoute: String?,
-    targetRoute: String,
-) {
-    if (targetRoute == currentRoute) return
-    if (targetRoute in adminTabRoutes) {
-        navController.navigate(targetRoute) {
-            popUpTo(AppDestinations.ADMIN_DASHBOARD) { inclusive = false }
-            launchSingleTop = true
-        }
-    } else {
-        navController.navigate(targetRoute)
     }
 }
 
@@ -247,15 +232,15 @@ fun AppNavGraph(
             startDestination = AppDestinations.STUDENT_HOME,
         ) {
             composable(AppDestinations.STUDENT_HOME) { backStack ->
-                val context = LocalContext.current
-                val container = (context.applicationContext as ComalApplication).container
                 val cartViewModel = studentCartViewModel(backStack, navController, container)
                 val homeViewModel = studentHomeViewModel(backStack, navController, container)
+                val notificationsViewModel = studentNotificationsViewModel(backStack, navController, container)
                 val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
                 StudentHomeScreen(
                     currentRoute = currentRoute,
-                    notificationCount = 0,
+                    notificationCount = notificationsUiState.unreadCount,
                     cartItemCount = cartUiState.totalItemCount,
                     onNotificationsClick = {
                         navController.navigate(AppDestinations.STUDENT_NOTIFICATIONS)
@@ -277,15 +262,15 @@ fun AppNavGraph(
             }
 
             composable(AppDestinations.STUDENT_MENU) { backStack ->
-                val context = LocalContext.current
-                val container = (context.applicationContext as ComalApplication).container
                 val cartViewModel = studentCartViewModel(backStack, navController, container)
-                val uiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsViewModel = studentNotificationsViewModel(backStack, navController, container)
+                val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
                 StudentMenuScreen(
                     currentRoute = currentRoute,
-                    notificationCount = 0,
-                    cartItemCount = uiState.totalItemCount,
+                    notificationCount = notificationsUiState.unreadCount,
+                    cartItemCount = cartUiState.totalItemCount,
                     onNotificationsClick = {
                         navController.navigate(AppDestinations.STUDENT_NOTIFICATIONS)
                     },
@@ -302,15 +287,15 @@ fun AppNavGraph(
             }
 
             composable(AppDestinations.STUDENT_CART) { backStack ->
-                val context = LocalContext.current
-                val container = (context.applicationContext as ComalApplication).container
                 val cartViewModel = studentCartViewModel(backStack, navController, container)
-                val uiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsViewModel = studentNotificationsViewModel(backStack, navController, container)
+                val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
                 StudentCartScreen(
                     currentRoute = currentRoute,
-                    notificationCount = 0,
-                    cartItemCount = uiState.totalItemCount,
+                    notificationCount = notificationsUiState.unreadCount,
+                    cartItemCount = cartUiState.totalItemCount,
                     onNotificationsClick = {
                         navController.navigate(AppDestinations.STUDENT_NOTIFICATIONS)
                     },
@@ -326,8 +311,6 @@ fun AppNavGraph(
             }
 
             composable(AppDestinations.STUDENT_ORDER_CONFIRM) { backStack ->
-                val context = LocalContext.current
-                val container = (context.applicationContext as ComalApplication).container
                 val cartViewModel = studentCartViewModel(backStack, navController, container)
                 val homeViewModel = studentHomeViewModel(backStack, navController, container)
                 val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
@@ -372,15 +355,15 @@ fun AppNavGraph(
             }
 
             composable(AppDestinations.STUDENT_ORDER_HISTORY) { backStack ->
-                val context = LocalContext.current
-                val container = (context.applicationContext as ComalApplication).container
                 val cartViewModel = studentCartViewModel(backStack, navController, container)
-                val uiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsViewModel = studentNotificationsViewModel(backStack, navController, container)
+                val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
                 StudentOrderHistoryScreen(
                     currentRoute = currentRoute,
-                    notificationCount = 0,
-                    cartItemCount = uiState.totalItemCount,
+                    notificationCount = notificationsUiState.unreadCount,
+                    cartItemCount = cartUiState.totalItemCount,
                     onNotificationsClick = {
                         navController.navigate(AppDestinations.STUDENT_NOTIFICATIONS)
                     },
@@ -395,15 +378,15 @@ fun AppNavGraph(
             }
 
             composable(AppDestinations.STUDENT_PROFILE) { backStack ->
-                val context = LocalContext.current
-                val container = (context.applicationContext as ComalApplication).container
                 val cartViewModel = studentCartViewModel(backStack, navController, container)
-                val uiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsViewModel = studentNotificationsViewModel(backStack, navController, container)
+                val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
                 StudentProfileScreen(
                     currentRoute = currentRoute,
-                    notificationCount = 0,
-                    cartItemCount = uiState.totalItemCount,
+                    notificationCount = notificationsUiState.unreadCount,
+                    cartItemCount = cartUiState.totalItemCount,
                     onNotificationsClick = {
                         navController.navigate(AppDestinations.STUDENT_NOTIFICATIONS)
                     },
@@ -420,20 +403,24 @@ fun AppNavGraph(
             }
 
             composable(AppDestinations.STUDENT_NOTIFICATIONS) { backStack ->
-                val context = LocalContext.current
-                val container = (context.applicationContext as ComalApplication).container
                 val cartViewModel = studentCartViewModel(backStack, navController, container)
-                val uiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsViewModel = studentNotificationsViewModel(backStack, navController, container)
+                val cartUiState by cartViewModel.uiState.collectAsStateWithLifecycle()
+                val notificationsUiState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
 
                 StudentNotificationsScreen(
                     currentRoute = currentRoute,
-                    notificationCount = 0,
-                    cartItemCount = uiState.totalItemCount,
+                    notificationCount = notificationsUiState.unreadCount,
+                    cartItemCount = cartUiState.totalItemCount,
                     onNotificationsClick = { },
                     onCartClick = { navController.navigate(AppDestinations.STUDENT_CART) },
                     onNavigate = { route ->
                         navigateFromSecondary(navController, currentRoute, route)
                     },
+                    onOrderClick = { orderId ->
+                        navController.navigate(AppDestinations.studentOrderStatus(orderId))
+                    },
+                    notificationsViewModel = notificationsViewModel,
                 )
             }
 
@@ -683,6 +670,7 @@ private fun studentCartViewModel(
         factory = StudentCartViewModel.Factory(
             orderRepository = container.orderRepository,
             authRepository = container.authRepository,
+            notificationRepository = container.notificationRepository,
         ),
     )
 }
@@ -706,3 +694,22 @@ private fun studentHomeViewModel(
         ),
     )
 }
+
+@Composable
+private fun studentNotificationsViewModel(
+    backStack: NavBackStackEntry,
+    navController: NavHostController,
+    container: com.example.comalapp.data.AppContainer,
+): StudentNotificationsViewModel {
+    val parentEntry = remember(backStack) {
+        navController.getBackStackEntry(AppDestinations.STUDENT_GRAPH)
+    }
+    return viewModel(
+        viewModelStoreOwner = parentEntry,
+        factory = StudentNotificationsViewModel.Factory(
+            authRepository = container.authRepository,
+            notificationRepository = container.notificationRepository,
+        ),
+    )
+}
+

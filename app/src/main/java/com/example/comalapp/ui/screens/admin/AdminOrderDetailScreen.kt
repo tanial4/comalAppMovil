@@ -64,6 +64,7 @@ fun AdminOrderDetailScreen(
             userRepository = container.userRepository,
             orderRepository = container.orderRepository,
             productRepository = container.productRepository,
+            notificationRepository = container.notificationRepository,
         )
     )
 
