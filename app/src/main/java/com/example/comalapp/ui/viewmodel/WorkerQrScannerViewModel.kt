@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.comalapp.data.model.User
 import com.example.comalapp.data.repository.AuthRepository
+import com.example.comalapp.data.repository.NotificationRepository
 import com.example.comalapp.data.repository.OrderRepository
 import com.example.comalapp.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,7 @@ class WorkerQrScannerViewModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val orderRepository: OrderRepository,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkerQrScannerUiState())
@@ -59,6 +61,13 @@ class WorkerQrScannerViewModel(
                 newStatus = "delivered",
                 requestedByRole = "worker",
             ).onSuccess {
+                notificationRepository.createNotification(
+                    userId = match.userId,
+                    orderId = match.id,
+                    title = "Orden entregada",
+                    message = "Tu orden #${match.id.takeLast(5).uppercase()} fue entregada. ¡Buen provecho!",
+                    type = "delivered",
+                )
                 _uiState.value = _uiState.value.copy(
                     isProcessing = false,
                     deliverySuccess = true,
@@ -89,9 +98,15 @@ class WorkerQrScannerViewModel(
         private val authRepository: AuthRepository,
         private val userRepository: UserRepository,
         private val orderRepository: OrderRepository,
+        private val notificationRepository: NotificationRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            WorkerQrScannerViewModel(authRepository, userRepository, orderRepository) as T
+            WorkerQrScannerViewModel(
+                authRepository,
+                userRepository,
+                orderRepository,
+                notificationRepository,
+            ) as T
     }
 }

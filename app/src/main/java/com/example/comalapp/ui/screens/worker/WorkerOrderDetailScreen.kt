@@ -65,6 +65,7 @@ fun WorkerOrderDetailScreen(
             orderId = orderId,
             orderRepository = container.orderRepository,
             productRepository = container.productRepository,
+            notificationRepository = container.notificationRepository,
         )
     )
 

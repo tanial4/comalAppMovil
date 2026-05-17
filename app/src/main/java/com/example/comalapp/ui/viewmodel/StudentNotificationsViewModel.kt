@@ -20,8 +20,8 @@ data class StudentNotificationsUiState(
 }
 
 class StudentNotificationsViewModel(
-    private val notificationRepository: NotificationRepository,
     private val authRepository: AuthRepository,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StudentNotificationsUiState())
@@ -32,14 +32,14 @@ class StudentNotificationsViewModel(
     }
 
     private fun observeNotifications() {
-        val userId = authRepository.currentUserId() ?: return
+        val uid = authRepository.currentUserId() ?: return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            notificationRepository.observeUserNotifications(userId).collect { result ->
+            notificationRepository.observeUserNotifications(uid).collect { result ->
                 result
                     .onSuccess { notifications ->
                         _uiState.value = _uiState.value.copy(
-                            notifications = notifications.sortedByDescending { it.createdAt },
+                            notifications = notifications,
                             isLoading = false,
                         )
                     }
@@ -50,6 +50,12 @@ class StudentNotificationsViewModel(
                         )
                     }
             }
+        }
+    }
+
+    fun markAsRead(notificationId: String) {
+        viewModelScope.launch {
+            notificationRepository.markAsRead(notificationId)
         }
     }
 
@@ -66,12 +72,11 @@ class StudentNotificationsViewModel(
     }
 
     class Factory(
-        private val notificationRepository: NotificationRepository,
         private val authRepository: AuthRepository,
+        private val notificationRepository: NotificationRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return StudentNotificationsViewModel(notificationRepository, authRepository) as T
-        }
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            StudentNotificationsViewModel(authRepository, notificationRepository) as T
     }
 }
