@@ -102,27 +102,38 @@ class AuthViewModel(
 
 private fun mapAuthError(error: Throwable): String {
     val code = (error as? FirebaseAuthException)?.errorCode ?: ""
+    val message = error.message ?: ""
+
     return when {
         code.contains("wrong-password", ignoreCase = true)
                 || code.contains("INVALID_LOGIN_CREDENTIALS", ignoreCase = true)
-                || code.contains("invalid-credential", ignoreCase = true) ->
-            "Correo o contraseña incorrectos"
-        code.contains("user-not-found", ignoreCase = true) ->
+                || code.contains("invalid-credential", ignoreCase = true)
+                || message.contains("credential", ignoreCase = true)
+                || message.contains("password", ignoreCase = true)
+                || message.contains("identifier", ignoreCase = true) ->
+            "Correo electrónico o contraseña incorrectos"
+        code.contains("user-not-found", ignoreCase = true)
+                || message.contains("user-not-found", ignoreCase = true) ->
             "No existe una cuenta con este correo"
-        code.contains("invalid-email", ignoreCase = true) ->
+        code.contains("invalid-email", ignoreCase = true)
+                || message.contains("badly formatted", ignoreCase = true) ->
             "El correo electrónico no es válido"
         code.contains("user-disabled", ignoreCase = true) ->
             "Esta cuenta ha sido deshabilitada"
-        code.contains("email-already-in-use", ignoreCase = true) ->
+        code.contains("email-already-in-use", ignoreCase = true)
+                || message.contains("already in use", ignoreCase = true) ->
             "Ya existe una cuenta con este correo"
-        code.contains("weak-password", ignoreCase = true) ->
+        code.contains("weak-password", ignoreCase = true)
+                || message.contains("at least 6", ignoreCase = true) ->
             "La contraseña debe tener al menos 6 caracteres"
-        code.contains("network-request-failed", ignoreCase = true) ->
+        code.contains("network-request-failed", ignoreCase = true)
+                || message.contains("network", ignoreCase = true) ->
             "Error de conexión. Verifica tu internet"
-        code.contains("too-many-requests", ignoreCase = true) ->
+        code.contains("too-many-requests", ignoreCase = true)
+                || message.contains("too many", ignoreCase = true) ->
             "Demasiados intentos fallidos. Intenta más tarde"
         code.contains("operation-not-allowed", ignoreCase = true) ->
             "Operación no permitida"
-        else -> error.message ?: "Ocurrió un error inesperado"
+        else -> "Ocurrió un error inesperado. Intenta de nuevo"
     }
 }

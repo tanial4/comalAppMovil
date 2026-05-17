@@ -154,6 +154,43 @@ fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = AppDestinations.LOGIN,
 ) {
+    val context = LocalContext.current
+    val container = (context.applicationContext as ComalApplication).container
+
+    LaunchedEffect(Unit) {
+        var isFirstEmission = true
+        container.authRepository.observeAuthState().collect { isAuthenticated ->
+            if (isFirstEmission) {
+                isFirstEmission = false
+                if (isAuthenticated) {
+                    val uid = container.authRepository.currentUserId() ?: return@collect
+                    container.userRepository.getUserById(uid).onSuccess { user ->
+                        val destination = when (user.role) {
+                            "student" -> AppDestinations.STUDENT_GRAPH
+                            "worker"  -> AppDestinations.WORKER_GRAPH
+                            "admin"   -> AppDestinations.ADMIN_GRAPH
+                            else      -> return@onSuccess
+                        }
+                        navController.navigate(destination) {
+                            popUpTo(AppDestinations.LOGIN) { inclusive = true }
+                        }
+                    }
+                }
+            } else if (!isAuthenticated) {
+                val authRoutes = setOf(
+                    AppDestinations.LOGIN,
+                    AppDestinations.REGISTER,
+                    AppDestinations.FORGOT_PASSWORD,
+                )
+                if (navController.currentDestination?.route !in authRoutes) {
+                    navController.navigate(AppDestinations.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+        }
+    }
+
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
