@@ -1,6 +1,7 @@
 package com.example.comalapp.ui.screens.student
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -262,7 +263,7 @@ fun StudentProfileScreen(
                         icon = Icons.Outlined.NotificationsNone,
                         title = "Notificaciones",
                         subtitle = "Avisos de tus pedidos",
-                        onClick = { },
+                        onClick = { onNotificationsClick() },
                     )
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 16.dp),
@@ -371,6 +372,7 @@ private fun ProfileItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
