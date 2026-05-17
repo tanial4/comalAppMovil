@@ -42,3 +42,31 @@ __MACOSX/
 
 # Generados por el compilador
 /out/
+
+# Firebase Functions
+functions/node_modules/
+functions/.env
+functions/.env.local
+functions/.runtimeconfig.json
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+
+.env
+env
+venv
+.venv
+
+# Firebase
+.firebaserc
+firebase-debug.log
+
+# Android local
+local.properties
+
+# Skills (Claude)
+skills-lock.json

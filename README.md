@@ -13,9 +13,11 @@ A mobile ordering application for university cafeterias built with Kotlin and Je
 - [Project Structure](#project-structure)
 - [Data Models](#data-models)
 - [Firebase Setup](#firebase-setup)
+- [Cloud Functions Setup](#cloud-functions-setup)
 - [Installation](#installation)
 - [Dependencies](#dependencies)
 - [Navigation](#navigation)
+- [Color Palette](#color-palette)
 
 ---
 
@@ -24,7 +26,7 @@ A mobile ordering application for university cafeterias built with Kotlin and Je
 ComalApp is a three-role cafeteria ordering system:
 
 - **Students** browse the menu, place orders, track their status in real time, and receive push notifications when their order is ready.
-- **Workers** manage incoming orders, update their status, toggle product availability, and confirm deliveries by scanning a QR code.
+- **Workers** manage incoming orders, update their status, toggle product availability, and confirm deliveries by scanning a QR code. They receive push notifications when a new order arrives.
 - **Administrators** manage the full product catalog, user accounts, worker accounts, and monitor all orders.
 
 ---
@@ -39,6 +41,8 @@ ComalApp is a three-role cafeteria ordering system:
 | Authentication | Firebase Auth |
 | Database | Cloud Firestore |
 | File Storage | Firebase Storage |
+| Push Notifications | Firebase Cloud Messaging (FCM) |
+| Cloud Functions | Firebase Functions v2 (Node.js) |
 | Navigation | Navigation Compose |
 | Image Loading | Coil |
 | QR Scanning | ZXing Android Embedded |
@@ -70,7 +74,12 @@ app/
 │   │   └── worker/
 │   ├── theme/          # Colors, typography, theme
 │   └── viewmodel/      # ViewModels per screen
-└── ComalApplication.kt # AppContainer initialization
+├── ComalApplication.kt # AppContainer + notification channel
+├── ComalFirebaseMessagingService.kt # FCM message handling
+└── MainActivity.kt     # Entry point + notification permission
+functions/
+├── index.js            # Cloud Functions (order triggers)
+└── package.json
 ```
 
 ### Dependency Injection
@@ -91,13 +100,15 @@ Each screen has a dedicated `UiState` data class collected as `StateFlow` via `c
 |---|---|
 | Registration & Login | Email/password with Firebase Auth |
 | Forgot Password | Reset link sent to registered email |
+| Change Password | Sends reset email from profile screen |
 | Menu Browsing | Products filtered by category with real-time availability |
 | Cart | Add, increment, decrement and remove items |
 | Order Confirmation | Review screen before placing the order |
 | Order Status | Real-time tracking with timeline (Received → Preparing → Ready → Delivered) |
 | QR Ticket | Generated QR code per order for delivery confirmation |
 | Order History | Full list of past orders with status |
-| Notifications | Real-time in-app notifications for every order status change |
+| In-app Notifications | Real-time notification feed for every order status change |
+| Push Notifications | System push notifications even when app is closed |
 | Profile | Account info, order stats, change password, logout |
 
 ### Worker
@@ -109,6 +120,7 @@ Each screen has a dedicated `UiState` data class collected as `StateFlow` via `c
 | Product Availability | Toggle products on/off for the current service |
 | Order Detail | View items, advance order status, confirm delivery |
 | QR Scanner | Scan student ticket QR to confirm delivery standalone |
+| Push Notifications | Receives push notification when a new order arrives |
 
 ### Admin
 
@@ -117,15 +129,14 @@ Each screen has a dedicated `UiState` data class collected as `StateFlow` via `c
 | Dashboard | Summary stats and quick access |
 | Product Management | Create, edit, delete products with image upload |
 | Order Management | View and manage all orders with full status control |
+| Cancel Orders | Cancel any active order with confirmation dialog |
 | User Management | View and delete student accounts |
 | Worker Management | Create, view and delete worker accounts |
 | Order Detail | Full control: advance, revert and cancel orders |
 
 ---
 
-## Project Structure
-
-### Data Models
+## Data Models
 
 ```kotlin
 User(uid, email, fullName, expediente, role, fcmToken)
@@ -167,7 +178,7 @@ Delivery from `ready` to `delivered` requires QR scan validation.
 ### 1. Create a Firebase project
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Create a new project
+2. Create a new project on the **Blaze (pay as you go)** plan (required for Cloud Functions)
 3. Register your Android app with package `com.example.comalapp`
 4. Download `google-services.json` and place it in the `app/` directory
 
@@ -176,6 +187,7 @@ Delivery from `ready` to `delivered` requires QR scan validation.
 - **Authentication** → Sign-in method → Email/Password → Enable
 - **Firestore Database** → Create database → Start in production mode
 - **Storage** → Get started
+- **Cloud Messaging** → No additional setup required (enabled by default)
 
 ### 3. Firestore Collections
 
@@ -245,9 +257,9 @@ service firebase.storage {
 Firestore → `categories` → Add documents:
 
 ```json
-{ "id": "<auto>", "name": "Bebidas" }
-{ "id": "<auto>", "name": "Comida" }
-{ "id": "<auto>", "name": "Snacks" }
+{ "name": "Bebidas" }
+{ "name": "Comida" }
+{ "name": "Snacks" }
 ```
 
 **Add products with images:**
@@ -267,6 +279,49 @@ Firestore → `categories` → Add documents:
 }
 ```
 
+> The `categoryId` must match exactly the **document ID** of the category in the `categories` collection, not the category name.
+
+---
+
+## Cloud Functions Setup
+
+Cloud Functions handle push notifications server-side. They trigger automatically when orders are created or updated in Firestore.
+
+### Prerequisites
+
+- Node.js installed
+- Firebase CLI: `npm install -g firebase-tools`
+
+### Setup
+
+```bash
+# Login to Firebase
+firebase login
+
+# Initialize functions in project root
+firebase init functions
+# Select: Use existing project → JavaScript → No to ESLint → Yes to install dependencies
+
+# Install dependencies inside functions folder
+cd functions
+npm install
+cd ..
+
+# Deploy functions
+firebase deploy --only functions
+```
+
+### What the functions do
+
+| Function | Trigger | Action |
+|---|---|---|
+| `onOrderCreated` | New document in `orders/` | Sends push to all workers |
+| `onOrderStatusChanged` | Status field changes in `orders/` | Sends push to the student who placed the order |
+
+### Verify deployment
+
+Firebase Console → Functions → both functions should be listed and active.
+
 ---
 
 ## Installation
@@ -276,6 +331,7 @@ Firestore → `categories` → Add documents:
 - Android Studio Hedgehog or newer
 - JDK 17
 - Android SDK 26+
+- Physical Android device (push notifications do not work on emulators without Google Play)
 - A Firebase project configured as described above
 
 ### Steps
@@ -290,10 +346,39 @@ cd comalapp
 
 # Add google-services.json to app/
 # Build → Make Project
-# Run on emulator or physical device
+# Run on physical device
 ```
 
-> The app requires internet connectivity. Firebase emulators are not configured by default.
+### .gitignore
+
+```
+# Android
+local.properties
+*.iml
+.gradle/
+build/
+app/build/
+
+# Firebase Functions
+functions/node_modules/
+functions/.env
+functions/.env.local
+functions/.runtimeconfig.json
+
+# Firebase CLI
+.firebase/
+.firebaserc
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+
+# Firebase config (uncomment if repository is public)
+# app/google-services.json
+
+# Claude
+skills-lock.json
+```
 
 ---
 
