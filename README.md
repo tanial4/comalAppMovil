@@ -10,11 +10,11 @@ A mobile ordering application for university cafeterias built with Kotlin and Je
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Features by Role](#features-by-role)
-- [Project Structure](#project-structure)
 - [Data Models](#data-models)
 - [Firebase Setup](#firebase-setup)
 - [Cloud Functions Setup](#cloud-functions-setup)
 - [Installation](#installation)
+- [Customization](#customization)
 - [Dependencies](#dependencies)
 - [Navigation](#navigation)
 - [Color Palette](#color-palette)
@@ -191,8 +191,6 @@ Delivery from `ready` to `delivered` requires QR scan validation.
 
 ### 3. Firestore Collections
 
-Create the following collections manually or they will be created on first write:
-
 | Collection | Description |
 |---|---|
 | `users` | All user accounts (students, workers, admins) |
@@ -239,7 +237,7 @@ service firebase.storage {
 
 **Create an admin user:**
 1. Firebase Console → Authentication → Add user (email + password)
-2. Firestore → `users` collection → Add document with the user's UID as document ID:
+2. Firestore → `users` → Add document with the user's UID as document ID:
 
 ```json
 {
@@ -285,7 +283,7 @@ Firestore → `categories` → Add documents:
 
 ## Cloud Functions Setup
 
-Cloud Functions handle push notifications server-side. They trigger automatically when orders are created or updated in Firestore.
+Cloud Functions handle push notifications server-side, triggering automatically when orders are created or updated in Firestore.
 
 ### Prerequisites
 
@@ -382,6 +380,36 @@ skills-lock.json
 
 ---
 
+## Customization
+
+### App Icon
+
+1. In Android Studio: **File → New → Image Asset**
+2. Select **Icon Type**: Launcher Icons (Adaptive and Legacy)
+3. Select **Source Asset**: Image → choose your PNG or SVG file
+4. Adjust size and background color
+5. Click **Next → Finish**
+
+This replaces all files in `app/src/main/res/mipmap-*/` with correctly sized versions for every screen density.
+
+### Theme Colors
+
+Colors are defined in `ui/theme/Color.kt`. The main tokens used throughout the app:
+
+| Token | Value | Usage |
+|---|---|---|
+| `primary` | `#16167A` | Main blue — top bars, buttons |
+| `blueAccent` | `#2929A3` | Secondary blue |
+| `blueHighlight` | `#06B6D4` | Cyan accent |
+| `violet` | `#7C3AED` | Worker role accent |
+| `pendient` | `#F59E0B` | Pending order status |
+| `prep` | `#3B82F6` | Preparing order status |
+| `ready` | `#16A34A` | Ready order status |
+| `delivered` | `#9CA3AF` | Delivered order status |
+| `danger` | `#D32F2F` | Errors and destructive actions |
+
+---
+
 ## Dependencies
 
 ```kotlin
@@ -416,8 +444,6 @@ implementation("com.google.zxing:core:3.5.3")
 ---
 
 ## Navigation
-
-The app uses a nested navigation graph structure:
 
 ```
 LOGIN
@@ -454,19 +480,3 @@ FORGOT_PASSWORD
 ```
 
 Session state is observed globally. If Firebase invalidates the auth token, the app automatically redirects to login from any screen. On app launch, if a valid session exists, the user is taken directly to their role's graph without passing through login.
-
----
-
-## Color Palette
-
-| Token | Value | Usage |
-|---|---|---|
-| `primary` | `#16167A` | Main blue — top bars, buttons |
-| `blueAccent` | `#2929A3` | Secondary blue |
-| `blueHighlight` | `#06B6D4` | Cyan accent |
-| `violet` | `#7C3AED` | Worker role accent |
-| `pendient` | `#F59E0B` | Pending order status |
-| `prep` | `#3B82F6` | Preparing order status |
-| `ready` | `#16A34A` | Ready order status |
-| `delivered` | `#9CA3AF` | Delivered order status |
-| `danger` | `#D32F2F` | Errors and destructive actions |
